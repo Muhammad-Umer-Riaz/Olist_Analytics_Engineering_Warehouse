@@ -20,6 +20,10 @@ profiles.yml          # dbt connection profiles (live in ~/.dbt or are local-onl
 *.p8                  # Snowflake key-pair private keys
 *.pem
 
+# Local Snowflake key-pair store (private + public keys live here, local only)
+/.keys/**
+!/.keys/README.md
+
 # ─────────────────────────────────────────────────────────────
 # dbt
 # ─────────────────────────────────────────────────────────────
@@ -53,6 +57,9 @@ webserver_config.py
 !/data/raw/.gitkeep
 
 # ─────────────────────────────────────────────────────────────
+# Handoff doc (local only)
+.handoff.md
+
 # OS / IDE
 # ─────────────────────────────────────────────────────────────
 .DS_Store

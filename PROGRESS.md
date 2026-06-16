@@ -10,25 +10,27 @@ _Last updated: 2026-06-16_
 
 ---
 
-## Phase 0 — Project Setup & Environment  `[-]`
+## Phase 0 — Project Setup & Environment  `[x]`
 
 Get the local toolchain and accounts ready. (Owner drives account signups; Claude generates + guides.)
 
 - `[x]` Scaffold repo skeleton (folders, `.gitignore`, README skeleton, tracking files)
-- `[ ]` Create Python virtual environment and install `requirements.txt` (dlt, dbt-snowflake)
-- `[ ]` Verify tool installs — `dlt --version`, `dbt --version`
-- `[ ]` Kaggle: accept dataset terms, download the 9 CSVs into `data/raw/` (see `data/README.md`)
-- `[ ]` Confirm Snowflake account is available (180-day DataCamp account)
-- `[ ]` Install the Astro CLI (needed in Phase 7; can defer until then)
+- `[x]` Install Python 3.12 (python.org) alongside the existing Store 3.13
+- `[x]` Create Python virtual environment (`.venv` on 3.12) and install `requirements.txt`
+- `[x]` Verify tool installs — dlt 1.28.0, dbt-core 1.11.11 + snowflake adapter 1.11.5, `pip check` clean
+- `[x]` Pin installed versions in `requirements.txt` for reproducibility
+- `[x]` Kaggle: 9 CSVs present in `data/raw/` (already downloaded)
+- `[x]` Confirm Snowflake account available — account `NEB29791` (AWS), role ACCOUNTADMIN
+- `[~]` Install the Astro CLI — deferred to Phase 7
 
-## Phase 1 — Snowflake Warehouse Setup (L2)  `[ ]`
+## Phase 1 — Snowflake Warehouse Setup (L2)  `[x]`
 
 Stand up the warehouse objects. Owner runs SQL in the Snowflake UI; Claude generates the SQL + explains each statement.
 
-- `[ ]` Generate setup SQL in `snowflake/` (warehouse, database, role, user, grants)
-- `[ ]` Create `RAW`, `STAGING`, `INTERMEDIATE`, `MARTS` schemas
-- `[ ]` Create a dedicated role + user for dlt and dbt to connect with
-- `[ ]` Confirm a local connection works (credentials reach the warehouse)
+- `[x]` Generate setup SQL in `snowflake/` (warehouse, database, role, user, grants)
+- `[x]` Create `RAW`, `STAGING`, `INTERMEDIATE`, `MARTS` schemas
+- `[x]` Create a dedicated role + user for dlt and dbt to connect with (two scoped service users — see ADR-012)
+- `[x]` Confirm a local connection works (credentials reach the warehouse) — both users verified; transformer DENIED `RAW` (least privilege proven)
 
 ## Phase 2 — Load Layer: dlt (L1)  `[ ]`
 

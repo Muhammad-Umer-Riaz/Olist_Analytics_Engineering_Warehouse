@@ -1,12 +1,11 @@
 # Root Python dependencies — dlt (extract+load) and dbt (transform).
-# Single shared venv (see CONTEXT.md / project setup).
-# Versions are intentionally unpinned for now; they get pinned when the L1 load
-# module is built and the working set is confirmed.
+# Single shared venv (.venv), built on Python 3.12 (see plans/0.environment-setup.md).
+# Top-level packages are pinned to the versions installed and verified in Phase 0.
 #
 # NOTE: Airflow/Astro manages its own dependencies in airflow/requirements.txt
 #       (generated later by `astro dev init`). Do NOT add Airflow deps here.
 
-dlt[snowflake]
-dbt-core
-dbt-snowflake
-requests          # FX rate API (Frankfurter) fetch
+dlt[snowflake]==1.28.0
+dbt-core==1.11.11
+dbt-snowflake==1.11.5
+requests==2.34.2          # FX rate API (Frankfurter) fetch

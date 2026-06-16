@@ -81,6 +81,32 @@ seller); `fct_orders` at order grain (delivery, payment, review).
 **Rationale:** Forcing one grain breaks either revenue or delivery analysis.
 **Rejected alternatives:** A single fact table.
 
+## ADR-012 — Snowflake RBAC: two scoped service users, key-pair auth, least privilege
+**Status:** Accepted · **Date:** 2026-06-16
+**Context:** dlt (load) and dbt (transform) both need to connect to Snowflake. The
+project's DNA is trustworthy, auditable data, so the warehouse access model must
+enforce separation of concerns rather than share one all-powerful login.
+**Decision:** Two functional roles + two `TYPE = SERVICE` users, one per tool:
+- `OLIST_LOADER` → `OLIST_LOADER_SVC` (dlt): writes `RAW`; also `CREATE SCHEMA ON
+  DATABASE OLIST` for dlt's `RAW_STAGING` merge scratch.
+- `OLIST_TRANSFORMER` → `OLIST_TRANSFORMER_SVC` (dbt): reads `RAW` (incl. future
+  tables/views via a future grant), writes `STAGING`/`INTERMEDIATE`/`MARTS`.
+Ownership = **Option C**: `SYSADMIN` owns warehouse + database + schemas; custom
+roles get privilege grants, not object ownership. DDL is **role-switched** so each
+object is created by the role that should own it (`SYSADMIN` infra, `ACCOUNTADMIN`
+resource monitor, `SECURITYADMIN` roles/users/grants). Auth is **key-pair** only
+(SERVICE users cannot use passwords); unencrypted PKCS#8 private keys live in
+`.keys/` (gitignored), public keys embedded in committed `snowflake/setup.sql`. A
+`OLIST_WH_MONITOR` resource monitor caps `OLIST_WH` at 30 credits/month.
+**Rationale:** Least privilege is provable, not aspirational — verified that
+`OLIST_TRANSFORMER` is physically DENIED writing `RAW` (`verify_connection.py`).
+Key-pair auth suits headless tools and avoids password sprawl. Role-switched DDL
+models real Snowflake admin hygiene instead of doing everything as ACCOUNTADMIN.
+**Rejected alternatives:** One shared user/role (no separation, no auditability);
+password auth (weaker for service accounts); managed-access schemas (heavier than a
+single future grant for this scope); custom roles owning objects (Option A/B —
+muddier ownership than SYSADMIN-owns-infra).
+
 ---
 
 ## Provisional decisions (sensible defaults; owner may revisit)
