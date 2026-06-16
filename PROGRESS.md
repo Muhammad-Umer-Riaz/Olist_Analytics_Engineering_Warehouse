@@ -1,54 +1,116 @@
 # PROGRESS.md
 
-Living build tracker for the Olist ELT Warehouse. Update as each module lands.
-Spec-driven workflow: a short plan goes in [`plans/`](./plans) before each module.
+Living build tracker for the Olist ELT Warehouse. The project is broken into
+**Phases**; work through them top to bottom, one step at a time. A short plan goes
+in [`plans/`](./plans) before each phase begins (see `CLAUDE.md`).
+
+**Convention:** `[ ]` = Not started · `[-]` = In progress · `[x]` = Completed · `[~]` = Dropped
 
 _Last updated: 2026-06-16_
 
 ---
 
-## Module status (L0 → L6)
+## Phase 0 — Project Setup & Environment  `[-]`
 
-| Layer | Module | Tool | Status |
-|-------|--------|------|--------|
-| L0 | Source — 9 Olist CSVs downloaded & placed in `data/raw/` | Kaggle | ☐ Not started |
-| —  | Repo skeleton (folders, .gitignore, tracking files) | — | ☑ Done |
-| L1 | Load (EL) — dlt pipeline (hybrid) + FX fetch → RAW | dlt | ☐ Not started |
-| L2 | Warehouse — wh / db / schemas / role / user setup | Snowflake | ☐ Not started |
-| L3 | Transform — staging → intermediate → marts | dbt Core | ☐ Not started |
-| L4 | Test + Docs — generic / singular / conditional tests | dbt | ☐ Not started |
-| L5 | Orchestrate — Airflow DAG (Astro CLI local) | Airflow | ☐ Not started |
-| L6 | BI — dashboards reading MARTS | TBD | ☐ Not started |
+Get the local toolchain and accounts ready. (Owner drives account signups; Claude generates + guides.)
 
-Legend: Convention: [ ] = Not started | [-] = In progress | [x] = Completed | [~] = Dropped
+- `[x]` Scaffold repo skeleton (folders, `.gitignore`, README skeleton, tracking files)
+- `[ ]` Create Python virtual environment and install `requirements.txt` (dlt, dbt-snowflake)
+- `[ ]` Verify tool installs — `dlt --version`, `dbt --version`
+- `[ ]` Kaggle: accept dataset terms, download the 9 CSVs into `data/raw/` (see `data/README.md`)
+- `[ ]` Confirm Snowflake account is available (180-day DataCamp account)
+- `[ ]` Install the Astro CLI (needed in Phase 7; can defer until then)
+
+## Phase 1 — Snowflake Warehouse Setup (L2)  `[ ]`
+
+Stand up the warehouse objects. Owner runs SQL in the Snowflake UI; Claude generates the SQL + explains each statement.
+
+- `[ ]` Generate setup SQL in `snowflake/` (warehouse, database, role, user, grants)
+- `[ ]` Create `RAW`, `STAGING`, `INTERMEDIATE`, `MARTS` schemas
+- `[ ]` Create a dedicated role + user for dlt and dbt to connect with
+- `[ ]` Confirm a local connection works (credentials reach the warehouse)
+
+## Phase 2 — Load Layer: dlt (L1)  `[ ]`
+
+Land raw data correctly. dlt is the loader (never Airflow — see `DECISIONS.md` ADR-003).
+
+- `[ ]` Initialize the dlt project in `dlt/` with the Snowflake destination
+- `[ ]` Configure connection + secrets (kept out of git via `.dlt/secrets.toml`)
+- `[ ]` Full-refresh the 4 reference tables (products, sellers, geolocation, category_translation) → `RAW`
+- `[ ]` Incremental-merge the 4 transactional tables (orders, order_items, payments, reviews) on a timestamp cursor → `RAW`
+- `[ ]` Seed incrementals in two passes (through 2017, then 2018 as the "new" batch)
+- `[ ]` Fetch FX rates (Frankfurter, BRL→USD/EUR) → `RAW`
+- `[ ]` Verify RAW row counts match the source CSVs
+
+## Phase 3 — Transform: dbt Staging (L3)  `[ ]`
+
+1:1 cleaned views, one hard problem each.
+
+- `[ ]` Initialize the dbt project, configure `profiles.yml`, confirm `dbt debug` passes
+- `[ ]` Declare `RAW` sources
+- `[ ]` Build `stg_*` models: cast + rename; collapse geolocation to 1 row/zip; translate categories to English
+- `[ ]` Add staging-level tests
+
+## Phase 4 — Transform: dbt Intermediate (L3)  `[ ]`
+
+Business logic + reusable macros. **Flag the Q6 null/rejects decision to the owner here.**
+
+- `[ ]` Build macros: `delivery_days()`, `is_late()`, revenue/AOV, RFM bucketing, BRL→target FX conversion
+- `[ ]` Collapse payment installments → 1 row/order
+- `[ ]` Dedup multi-review orders
+- `[ ]` **Confirm the Q6 null/orphan policy with owner**, then implement rejects-table routing (see `DECISIONS.md` ADR-009)
+
+## Phase 5 — Transform: dbt Marts (L3)  `[ ]`
+
+The star schema — the real modeling work.
+
+- `[ ]` Dimensions: `dim_customers`, `dim_products`, `dim_sellers`, `dim_dates`, `dim_geography`
+- `[ ]` `fct_order_items` at order-item grain (revenue, freight, product, seller)
+- `[ ]` `fct_orders` at order grain (delivery, payment, review)
+- `[ ]` `customer_summary` at person grain (RFM / CLV)
+
+## Phase 6 — Test & Document (L4)  `[ ]`
+
+Trustworthy, auditable data — honor the Provenance DNA.
+
+- `[ ]` Generic tests: unique, not_null, relationships, accepted_values (order_status, payment_type, review_score 1–5)
+- `[ ]` Singular tests: no negative price/freight, delivered ≥ purchase, payment reconciles, no orphan fact keys
+- `[ ]` Conditional null tests per the confirmed Q6 policy
+- `[ ]` Generate dbt docs (lineage graph)
+
+## Phase 7 — Orchestrate: Airflow (L5)  `[ ]`
+
+Wire it all into one DAG with real dependencies.
+
+- `[ ]` `astro dev init` inside `airflow/`
+- `[ ]` DAG: `dlt_load_olist` (parallel tasks) + `fetch_fx` → `dbt run` → `dbt test` → `dbt docs`
+- `[ ]` Add retries and a failure branch
+- `[ ]` Run the DAG locally end-to-end and verify
+
+## Phase 8 — BI Layer (L6)  `[ ]`
+
+Reads `MARTS`. **Tool decision still open** (see `DECISIONS.md` ADR-011).
+
+- `[ ]` Decide BI tool — Power BI vs Evidence.dev
+- `[ ]` Connect to `MARTS`
+- `[ ]` Build the dashboard(s)
+
+## Phase 9 — Polish & Publish  `[ ]`
+
+- `[ ]` Write the full `README.md` (architecture, setup, honest caveats — incl. static-data caveat on incrementals)
+- `[ ]` Capture figures: ERD, dbt lineage DAG, dashboard screenshots → `figures/`
+- `[ ]` Final review of `DECISIONS.md`
+- `[ ]` Push to GitHub (only on explicit owner instruction)
 
 ---
 
-## Immediate next steps (from CONTEXT.md §5)
+## Open decisions (need an owner call — see `DECISIONS.md`)
 
-1. Confirm the 9 Olist CSVs are downloaded from Kaggle and placed in `data/raw/`.
-2. ~~Scaffold the repo (folders, .gitignore, README skeleton, tracking files).~~ ☑
-3. Set up Snowflake objects (warehouse, database, RAW/STAGING/INTERMEDIATE/MARTS
-   schemas, role, user) — owner drives the Snowflake UI/SQL; Claude generates SQL + guides.
-4. Build L1: dlt pipeline (hybrid load) + FX fetch. Get RAW landing correctly.
-5. Build L3 staging → intermediate (**flag the Q6 null/rejects decision here**) → marts.
-6. Build L4 tests + docs.
-7. Wire L5 Airflow DAG.
-8. Build L6 BI once the tool is chosen.
-
----
-
-## Open items (need an owner decision)
-
-- **BI tool** — Power BI (recommended) vs Evidence.dev. Decide before L6. See `DECISIONS.md`.
-- **Q6 — null / orphan handling** — provisional default is Hybrid (keep meaningful
-  gaps as signal; quarantine broken rows into a documented rejects table).
-  **Confirm before finalizing the L4 test suite.** See `DECISIONS.md`.
-
----
+- `[ ]` **BI tool** — Power BI (recommended) vs Evidence.dev. Needed before Phase 8. (ADR-011)
+- `[ ]` **Q6 — null / orphan handling** — provisional Hybrid default; **confirm before finalizing Phase 6 tests**. (ADR-009)
 
 ## Owner-driven steps (Claude generates + guides, cannot do directly)
 
-- Snowflake web UI setup.
-- Power BI Desktop (if chosen).
-- Accepting Kaggle dataset terms / downloading the CSVs.
+- Snowflake web UI setup
+- Power BI Desktop (if chosen)
+- Accepting Kaggle dataset terms / downloading the CSVs
