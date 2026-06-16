@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.python-version
+
+# ─────────────────────────────────────────────────────────────
+# Secrets / credentials  (NEVER commit)
+# ─────────────────────────────────────────────────────────────
+.env
+.env.*
+.dlt/secrets.toml
+secrets.toml
+profiles.yml          # dbt connection profiles (live in ~/.dbt or are local-only)
+*.p8                  # Snowflake key-pair private keys
+*.pem
+
+# ─────────────────────────────────────────────────────────────
+# dbt
+# ─────────────────────────────────────────────────────────────
+target/
+dbt_packages/
+dbt_modules/
+logs/
+.user.yml
+
+# ─────────────────────────────────────────────────────────────
+# dlt  (local pipeline state / working dirs)
+# ─────────────────────────────────────────────────────────────
+.dlt/
+*.duckdb
+
+# ─────────────────────────────────────────────────────────────
+# Airflow / Astro CLI
+# ─────────────────────────────────────────────────────────────
+.astro/
+airflow_settings.yaml
+airflow.db
+airflow.cfg
+webserver_config.py
+
+# ─────────────────────────────────────────────────────────────
+# Data  (gitignored — see data/README.md to download from Kaggle)
+# ─────────────────────────────────────────────────────────────
+/data/**
+!/data/README.md
+!/data/raw/
+!/data/raw/.gitkeep
+
+# ─────────────────────────────────────────────────────────────
+# OS / IDE
+# ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
