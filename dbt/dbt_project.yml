@@ -1,0 +1,15 @@
+name: 'olist_dbt'
+version: '1.0.0'
+config-version: 2
+
+# Which profile (in profiles.yml) holds the Snowflake connection for this project.
+profile: 'olist_dbt'
+
+# Layer config. Staging models are 1:1 cleaned VIEWS that land in the STAGING schema.
+# The +schema here is used verbatim because macros/generate_schema_name.sql overrides
+# dbt's default "<target>_<custom>" concatenation.
+models:
+  olist_dbt:
+    staging:
+      +materialized: view
+      +schema: STAGING

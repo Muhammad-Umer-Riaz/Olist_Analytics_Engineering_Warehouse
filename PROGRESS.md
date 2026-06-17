@@ -6,7 +6,7 @@ in [`plans/`](./plans) before each phase begins (see `CLAUDE.md`).
 
 **Convention:** `[ ]` = Not started · `[-]` = In progress · `[x]` = Completed · `[~]` = Dropped
 
-_Last updated: 2026-06-16_
+_Last updated: 2026-06-17_
 
 ---
 
@@ -44,14 +44,14 @@ Land raw data correctly. dlt is the loader (never Airflow — see `DECISIONS.md`
 - `[x]` Fetch FX rates (Frankfurter, BRL→USD/EUR, long format) → `RAW.fx_rates` (1,088 rows)
 - `[x]` Verify RAW row counts match the source CSVs (all 9 exact; parsed with a real CSV reader, not line-count)
 
-## Phase 3 — Transform: dbt Staging (L3)  `[ ]`
+## Phase 3 — Transform: dbt Staging (L3)  `[x]`
 
-1:1 cleaned views, one hard problem each.
+1:1 cleaned views, one hard problem each. See `DECISIONS.md` ADR-014 + `plans/3.dbt-staging.md`.
 
-- `[ ]` Initialize the dbt project, configure `profiles.yml`, confirm `dbt debug` passes
-- `[ ]` Declare `RAW` sources
-- `[ ]` Build `stg_*` models: cast + rename; collapse geolocation to 1 row/zip; translate categories to English
-- `[ ]` Add staging-level tests
+- `[x]` Initialize the dbt project (manual scaffold), configure `profiles.yml` (key-pair, `--profiles-dir .`), `dbt debug` passes; `generate_schema_name` override routes models into `STAGING`
+- `[x]` Declare `RAW` sources (`olist_raw`, 10 tables)
+- `[x]` Build 10 `stg_olist__*` views: cast (VARCHAR→`timestamp_ntz`) + light-touch rename (`lenght`→`length`); drop `_dlt_*`; collapse geolocation to 1 row/zip (median coords + deterministic modal city). **Category translation kept as its own 1:1 model; PT→EN join deferred to intermediate/marts (refines CONTEXT §4)**
+- `[x]` Add staging tests (32: PK unique+not_null, composite via `dbt_utils`, accepted_values) — all pass
 
 ## Phase 4 — Transform: dbt Intermediate (L3)  `[ ]`
 

@@ -142,6 +142,46 @@ order_items/payments for a uniform cursor (breaks RAW 1:1); forcing `customers` 
 incremental group (no cursor exists); the dlt filesystem-readers source (more abstraction,
 weaker leading-zero control at this scale).
 
+## ADR-014 — Phase 3 dbt staging: conventions, schema routing, geolocation collapse, typing boundary
+**Status:** Accepted · **Date:** 2026-06-17
+**Context:** First dbt layer (L3). Needed project conventions (naming, schema routing), a
+connection model, and resolution of two hard cleaning problems (geolocation, category
+translation) plus the load→transform typing boundary (RAW landed timestamps as VARCHAR).
+Plan grilled (`/grill-me`) before build.
+**Decision:**
+- **Project/connection:** dbt Core, self-contained in `dbt/` (manual scaffold, not interactive
+  `dbt init`). `profiles.yml` local + gitignored; key-pair auth as `OLIST_TRANSFORMER_SVC`
+  (role `OLIST_TRANSFORMER`); run with `--profiles-dir .`.
+- **Naming (dbt-Labs standard):** `models/staging/olist/stg_olist__<entity>.sql`,
+  `_olist__sources.yml`, `_olist__models.yml`; source `olist_raw` over `OLIST.RAW` (10 tables).
+- **Materialization/schema:** staging = **views** in `STAGING`. `generate_schema_name`
+  overridden so `+schema` is used **verbatim** (avoids dbt's default `STAGING_STAGING`
+  concatenation). No CREATE SCHEMA pre-grant — schemas pre-exist; dbt only creates missing ones.
+- **Typing:** staging owns casting (RAW stays 1:1 text). **Hard `::timestamp_ntz`** casts
+  (fail-fast); NTZ because Olist times are local Brazil, no offset. **Drop all `_dlt_*`**
+  columns (lineage stays recoverable in untouched RAW).
+- **Renames (light-touch):** fix `product_*_lenght`→`length`; keep zip-prefix names
+  entity-specific; otherwise mirror RAW exactly.
+- **Geolocation collapse** to 1 row/zip: `MEDIAN(lat/lng)` + **deterministic** modal
+  city/state (`ROW_NUMBER` by count desc, then alphabetical) — not bare `MODE()`; keep
+  coord-NULL zips. (Collapses 1,000,163 → 19,015.)
+- **Category translation:** `stg_olist__products` stays strictly 1:1; translation is its own
+  staging model; the PT→EN join is **deferred** to intermediate/marts — **refines `CONTEXT.md
+  §4`**, which had pencilled the join into staging.
+- **Dependency:** added `dbt_utils` (composite-PK tests now; surrogate keys later).
+- **Tests (moderate):** PK unique + not_null on every model (composite keys via
+  `dbt_utils.unique_combination_of_columns`), accepted_values on `order_status`,
+  `payment_type`, `review_score`. Generic-test args nested under `arguments:` (dbt 1.11
+  forward-compat). Heavy singular + cross-model tests deferred to Phase 6.
+**Rationale:** Establishes recognizable dbt-Labs conventions; keeps RAW provenance intact while
+staging owns correctness; reproducible geolocation; honest typing. **Verified:** 10 views built,
+row counts reconcile to RAW exactly (geolocation collapsed as expected), 32/32 tests pass, no
+deprecations.
+**Rejected alternatives:** interactive `dbt init` (fights the existing `dbt/` layout); default
+`STAGING_STAGING` schema; `try_cast` (silently hides bad data); enriching `stg_products` with
+the English category (breaks 1:1 traceability); bare `MODE()` (non-deterministic ties);
+hand-rolled composite-uniqueness tests (`dbt_utils` is the standard).
+
 ---
 
 ## Provisional decisions (sensible defaults; owner may revisit)

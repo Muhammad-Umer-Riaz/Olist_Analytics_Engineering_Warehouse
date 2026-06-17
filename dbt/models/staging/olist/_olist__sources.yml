@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: olist_raw
+    description: >
+      Raw 1:1 landing zone for the Olist e-commerce dataset plus FX rates, loaded by
+      dlt (Phase 2). Faithful to source: timestamps land as VARCHAR and zip prefixes as
+      strings (leading zeros preserved). No freshness is declared — this is a static
+      historical dump, so nothing new arrives.
+    database: OLIST
+    schema: RAW
+
+    tables:
+      # --- Reference / dimension tables (full-refresh load) ---
+      - name: customers
+        description: One row per order-scoped customer_id; customer_unique_id is the real person.
+      - name: geolocation
+        description: Many rows per zip prefix (scattered lat/lng, dirty city spellings) — collapsed in staging.
+      - name: sellers
+        description: One row per seller, with zip prefix / city / state.
+      - name: products
+        description: One row per product, Portuguese category name (English via category_translation).
+      - name: product_category_name_translation
+        description: Lookup mapping Portuguese product category names to English.
+
+      # --- Transactional tables (incremental-merge load) ---
+      - name: orders
+        description: One row per order; order_purchase_timestamp is the load cursor.
+      - name: order_items
+        description: One row per item within an order (finest sales grain); price + freight.
+      - name: order_payments
+        description: Multiple rows per order (installments / split payments) — collapsed in intermediate.
+      - name: order_reviews
+        description: Not every order has a review; a few have two — deduped in intermediate.
+
+      # --- External source (Frankfurter FX API) ---
+      - name: fx_rates
+        description: Long-format BRL->USD/EUR business-day rates; weekend/holiday gap-fill is a dbt job.

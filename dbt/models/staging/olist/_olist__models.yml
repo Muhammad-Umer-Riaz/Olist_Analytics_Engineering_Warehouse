@@ -1,0 +1,143 @@
+version: 2
+
+models:
+  # ---------------------------------------------------------------------------
+  # Reference / dimension tables
+  # ---------------------------------------------------------------------------
+  - name: stg_olist__customers
+    description: One row per order-scoped customer_id. customer_unique_id is the real person.
+    columns:
+      - name: customer_id
+        description: Per-order customer key (join key for facts).
+        data_tests: [unique, not_null]
+      - name: customer_unique_id
+        description: Stable person identifier linking a person's many orders.
+        data_tests: [not_null]
+      - name: customer_zip_code_prefix
+        description: Brazilian zip prefix (VARCHAR — leading zeros preserved).
+
+  - name: stg_olist__sellers
+    description: One row per seller.
+    columns:
+      - name: seller_id
+        data_tests: [unique, not_null]
+      - name: seller_zip_code_prefix
+        description: VARCHAR — leading zeros preserved.
+
+  - name: stg_olist__products
+    description: One row per product. Category is Portuguese (English join deferred to marts).
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+      - name: product_category_name
+        description: Portuguese category name; maps to stg_olist__category_translation.
+
+  - name: stg_olist__category_translation
+    description: Lookup of Portuguese product category names to English.
+    columns:
+      - name: product_category_name
+        description: Portuguese (join key back to products).
+        data_tests: [unique, not_null]
+      - name: product_category_name_english
+        data_tests: [not_null]
+
+  - name: stg_olist__geolocation
+    description: One row per zip prefix — median coordinates + deterministic modal city/state.
+    columns:
+      - name: geolocation_zip_code_prefix
+        description: VARCHAR — leading zeros preserved. Unique after the collapse.
+        data_tests: [unique, not_null]
+
+  # ---------------------------------------------------------------------------
+  # Transactional tables
+  # ---------------------------------------------------------------------------
+  - name: stg_olist__orders
+    description: One row per order.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        description: FK to stg_olist__customers.
+        data_tests: [not_null]
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  [delivered, shipped, canceled, unavailable, invoiced,
+                   processing, created, approved]
+      - name: order_purchase_timestamp
+        description: When the order was placed (load cursor in Phase 2).
+        data_tests: [not_null]
+
+  - name: stg_olist__order_items
+    description: One row per item within an order (finest sales grain).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, order_item_id]
+    columns:
+      - name: order_id
+        description: FK to stg_olist__orders.
+        data_tests: [not_null]
+      - name: order_item_id
+        description: Sequence number of the item within the order.
+        data_tests: [not_null]
+      - name: product_id
+        description: FK to stg_olist__products.
+      - name: seller_id
+        description: FK to stg_olist__sellers.
+
+  - name: stg_olist__order_payments
+    description: Multiple rows per order (installments / split payments).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, payment_sequential]
+    columns:
+      - name: order_id
+        description: FK to stg_olist__orders.
+        data_tests: [not_null]
+      - name: payment_sequential
+        data_tests: [not_null]
+      - name: payment_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [credit_card, boleto, voucher, debit_card, not_defined]
+
+  - name: stg_olist__order_reviews
+    description: Not every order has a review; a few have two. Grain = (review_id, order_id).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [review_id, order_id]
+    columns:
+      - name: review_id
+        data_tests: [not_null]
+      - name: order_id
+        description: FK to stg_olist__orders.
+        data_tests: [not_null]
+      - name: review_score
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+
+  # ---------------------------------------------------------------------------
+  # External source (FX)
+  # ---------------------------------------------------------------------------
+  - name: stg_olist__fx_rates
+    description: Long-format BRL->USD/EUR business-day rates. Grain = (rate_date, quote_currency).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [rate_date, quote_currency]
+    columns:
+      - name: rate_date
+        data_tests: [not_null]
+      - name: quote_currency
+        data_tests: [not_null]
+      - name: rate
+        data_tests: [not_null]

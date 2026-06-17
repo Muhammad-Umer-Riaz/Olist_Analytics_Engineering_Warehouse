@@ -16,8 +16,10 @@ env/
 .env.*
 .dlt/secrets.toml
 secrets.toml
-profiles.yml          # dbt connection profiles (live in ~/.dbt or are local-only)
-*.p8                  # Snowflake key-pair private keys
+# dbt connection profiles (live in ~/.dbt or are local-only)
+profiles.yml
+# Snowflake key-pair private keys
+*.p8
 *.pem
 
 # Local Snowflake key-pair store (private + public keys live here, local only)
