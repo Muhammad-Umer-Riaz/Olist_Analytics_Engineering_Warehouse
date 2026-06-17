@@ -182,6 +182,50 @@ deprecations.
 the English category (breaks 1:1 traceability); bare `MODE()` (non-deterministic ties);
 hand-rolled composite-uniqueness tests (`dbt_utils` is the standard).
 
+## ADR-015 — Phase 4 dbt intermediate: business logic, FX gap-fill, 3-state reconciliation, auditable rejects
+**Status:** Accepted · **Date:** 2026-06-17
+**Context:** First business-logic layer (L3 intermediate), feeding the Phase 5 star schema. Needed
+reusable macros, grain collapses (payments→order, reviews→order), the deferred PT→EN category join,
+the currency-defect fix (FX gap-fill + conversion), and resolution of Q6/ADR-009 (null vs orphan vs
+broken). Plan grilled (`/grill-me`) and **every threshold set against the real CSV data** before build.
+**Decision:**
+- **Layer config:** intermediate = **views** in `INTERMEDIATE` (inspectable; table/incremental
+  deferred to marts). Naming `int_olist__<entity>_<verb>`.
+- **Macros (built where first used):** `delivery_days`, `is_late` (NULL when undelivered),
+  `order_item_revenue` = price+freight, `brl_to` = round(amount×rate,2). **RFM bucketing + AOV
+  deferred to Phase 5** (person/mart grain); **item-grain FX deferred to Phase 5** (reuses `brl_to`
+  + `int_olist__fx_rates_filled`). Refines CONTEXT §4 — same deferral pattern as ADR-014.
+- **FX gap-fill (`int_olist__fx_rates_filled`):** 1 row per (calendar_date, quote_currency) over the
+  **full extent** least(min order, min rate) → greatest(max order, max rate); **LOCF forward-fill +
+  leading back-fill**; `rate not_null` = fail-loud coverage guard. Convert on
+  **`order_purchase_timestamp::date`**; rate is BRL→quote (USD = BRL×rate). **Lesson:** `dbt_utils.
+  date_spine` is **end-EXCLUSIVE** — add 1 day to the end bound (caught a dropped final day, 2018-10-17).
+- **Payments collapse (`int_olist__payments_pivoted`, 1/order):** total_payment_value, payment_count,
+  max_installments, distinct_payment_types, is_multi_method; `primary_payment_type` = argmax sum(value)
+  with **deterministic alphabetical tie-break**. `not_defined` kept.
+- **Review dedup (`int_olist__reviews_deduped`, 1/order):** keep **latest** (creation date, then answer
+  ts nulls-last, then review_id). order_id unique; review_id intentionally not unique.
+- **Category (`int_olist__products_enriched`):** deferred PT→EN join via LEFT JOIN; untranslated = kept
+  NULL (signal, 623 products), never a reject.
+- **Reconciliation (Q6/ADR-009):** sum(payment_value) vs sum(price+freight) at order grain, tolerance
+  **±0.01 BRL absolute**. **3-state** `is_payment_reconciled` (TRUE/FALSE/**NULL when not assessable**)
+  + signed `payment_reconciliation_diff` on `int_olist__orders_enriched`. Discrepancies are **flagged
+  and kept** (264 overpaid = legitimate financing, 39 underpaid; audit via `where not
+  is_payment_reconciled`) — **not** quarantined.
+- **Rejects (`int_olist__rejects`):** consolidated quarantine of genuinely-broken/excluded rows only —
+  3 orphan guards (items/payments/reviews) + `order_no_payment`. `rejected_at` from `run_started_at`.
+**Verified against data:** orphans = **0** across all three child tables (Olist FK-clean — guards kept
+as standing gates for incremental loads); **1** reject (`order_no_payment`, a delivered order); **775**
+payment-no-item orders kept as canceled/unavailable signal (reconciliation NULL); FX spine 776 dates ×
+2 = 1,552 rows, **0 null rates**, covers 2016-09-02 → 2018-10-17; orders_enriched 99,441 rows (no
+fan-out): **98,362 reconciled / 303 mismatched / 776 not-assessable**; **24/24 intermediate tests pass**.
+**Note (decimal vs float):** mismatch count is **303**, not the 378 from the pandas pre-check — exact
+`number(10,2)` arithmetic correctly reconciles **273 exactly-one-cent** orders that float noise inflated.
+**Rejected alternatives:** quarantining reconciliation mismatches (silent-drops legitimate financing
+revenue); a 2-state reconciliation flag (miscasts canceled orders as mismatches); interpolated/nearest
+FX (invents or leaks rates); array or most-frequent `payment_type` (loses value-weighting / re-opens
+ties); dropping the 0-row orphan guards (they protect future incremental loads).
+
 ---
 
 ## Provisional decisions (sensible defaults; owner may revisit)
@@ -192,14 +236,16 @@ hand-rolled composite-uniqueness tests (`dbt_utils` is the standard).
 acceptable if it loads more cleanly. **Confirm if switching.**
 
 ## ADR-009 — Null / orphan handling (Q6)
-**Status:** Provisional — **owner deferred; confirm before finalizing L4 tests** · **Date:** 2026-06-16
-**Decision (default):** Hybrid. Keep operationally meaningful gaps as signal
-(undelivered orders, no-review orders = legitimate left-join nulls; conditional
-tests, e.g. delivery date not_null only where status='delivered'). **Quarantine**
-genuinely broken rows (unreconcilable payments, orphaned keys) into a documented
-**rejects table** with a reason column — never silently drop them.
+**Status:** Accepted — **confirmed with owner 2026-06-17 (Phase 4); see ADR-015 for implementation** · **Date:** 2026-06-16
+**Decision:** Hybrid. Keep operationally meaningful gaps as signal (undelivered orders,
+no-review orders = legitimate left-join nulls; conditional tests). **Quarantine** genuinely
+broken rows (orphaned keys; structurally missing payment) into a documented **rejects table**
+with a reason column — never silently drop them.
+**Refinement confirmed in Phase 4 (ADR-015):** payment-reconciliation *mismatches* are **flagged
+and kept** (3-state `is_payment_reconciled`), **not** quarantined — the data showed most are
+legitimate credit-card financing fees, so quarantining them would silent-drop real revenue. The
+rejects table holds only genuinely-broken/excluded rows (orphans = 0; `order_no_payment` = 1).
 **Rationale:** Echoes the owner's "Provenance" audit DNA (every value traceable).
-**Action:** Flag to owner early in the build (at the intermediate layer) and confirm.
 
 ## ADR-010 — Distance enrichment (buyer↔seller)
 **Status:** Provisional (nice-to-have) · **Date:** 2026-06-16

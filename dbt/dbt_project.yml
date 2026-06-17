@@ -13,3 +13,9 @@ models:
     staging:
       +materialized: view
       +schema: STAGING
+    # Intermediate models are business-logic VIEWS in the INTERMEDIATE schema.
+    # +schema is used verbatim (see macros/generate_schema_name.sql) so they land
+    # in INTERMEDIATE, not INTERMEDIATE_INTERMEDIATE.
+    intermediate:
+      +materialized: view
+      +schema: INTERMEDIATE

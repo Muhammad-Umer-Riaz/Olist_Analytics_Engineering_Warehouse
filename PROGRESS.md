@@ -53,14 +53,15 @@ Land raw data correctly. dlt is the loader (never Airflow — see `DECISIONS.md`
 - `[x]` Build 10 `stg_olist__*` views: cast (VARCHAR→`timestamp_ntz`) + light-touch rename (`lenght`→`length`); drop `_dlt_*`; collapse geolocation to 1 row/zip (median coords + deterministic modal city). **Category translation kept as its own 1:1 model; PT→EN join deferred to intermediate/marts (refines CONTEXT §4)**
 - `[x]` Add staging tests (32: PK unique+not_null, composite via `dbt_utils`, accepted_values) — all pass
 
-## Phase 4 — Transform: dbt Intermediate (L3)  `[ ]`
+## Phase 4 — Transform: dbt Intermediate (L3)  `[x]`
 
-Business logic + reusable macros. **Flag the Q6 null/rejects decision to the owner here.**
+Business logic + reusable macros. See `DECISIONS.md` ADR-015 + `plans/4.dbt-intermediate.md`. 24/24 tests pass.
 
-- `[ ]` Build macros: `delivery_days()`, `is_late()`, revenue/AOV, RFM bucketing, BRL→target FX conversion
-- `[ ]` Collapse payment installments → 1 row/order
-- `[ ]` Dedup multi-review orders
-- `[ ]` **Confirm the Q6 null/orphan policy with owner**, then implement rejects-table routing (see `DECISIONS.md` ADR-009)
+- `[x]` Build macros: `delivery_days()`, `is_late()`, `order_item_revenue()`, `brl_to()` (FX conversion). **RFM bucketing + AOV deferred to Phase 5** (person/mart grain — ADR-015)
+- `[x]` Collapse payment installments → 1 row/order (`int_olist__payments_pivoted`: dominant method + multi-method flag)
+- `[x]` Dedup multi-review orders (`int_olist__reviews_deduped`: latest wins; removed 551 extra reviews)
+- `[x]` PT→EN category join (`int_olist__products_enriched`, deferred from staging); FX gap-fill (`int_olist__fx_rates_filled`, LOCF + leading back-fill)
+- `[x]` **Q6 confirmed (ADR-009/015):** 3-state reconciliation flag (kept) + consolidated `int_olist__rejects` (0 orphans, 1 `order_no_payment`)
 
 ## Phase 5 — Transform: dbt Marts (L3)  `[ ]`
 
@@ -109,7 +110,7 @@ Reads `MARTS`. **Tool decision still open** (see `DECISIONS.md` ADR-011).
 ## Open decisions (need an owner call — see `DECISIONS.md`)
 
 - `[ ]` **BI tool** — Power BI (recommended) vs Evidence.dev. Needed before Phase 8. (ADR-011)
-- `[ ]` **Q6 — null / orphan handling** — provisional Hybrid default; **confirm before finalizing Phase 6 tests**. (ADR-009)
+- `[x]` **Q6 — null / orphan handling** — **confirmed 2026-06-17 (Phase 4):** Hybrid; reconciliation mismatches flagged-and-kept, only broken rows quarantined. (ADR-009 / ADR-015)
 
 ## Owner-driven steps (Claude generates + guides, cannot do directly)
 
