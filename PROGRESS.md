@@ -32,17 +32,17 @@ Stand up the warehouse objects. Owner runs SQL in the Snowflake UI; Claude gener
 - `[x]` Create a dedicated role + user for dlt and dbt to connect with (two scoped service users — see ADR-012)
 - `[x]` Confirm a local connection works (credentials reach the warehouse) — both users verified; transformer DENIED `RAW` (least privilege proven)
 
-## Phase 2 — Load Layer: dlt (L1)  `[ ]`
+## Phase 2 — Load Layer: dlt (L1)  `[x]`
 
-Land raw data correctly. dlt is the loader (never Airflow — see `DECISIONS.md` ADR-003).
+Land raw data correctly. dlt is the loader (never Airflow — see `DECISIONS.md` ADR-003). See ADR-013.
 
-- `[ ]` Initialize the dlt project in `dlt/` with the Snowflake destination
-- `[ ]` Configure connection + secrets (kept out of git via `.dlt/secrets.toml`)
-- `[ ]` Full-refresh the 4 reference tables (products, sellers, geolocation, category_translation) → `RAW`
-- `[ ]` Incremental-merge the 4 transactional tables (orders, order_items, payments, reviews) on a timestamp cursor → `RAW`
-- `[ ]` Seed incrementals in two passes (through 2017, then 2018 as the "new" batch)
-- `[ ]` Fetch FX rates (Frankfurter, BRL→USD/EUR) → `RAW`
-- `[ ]` Verify RAW row counts match the source CSVs
+- `[x]` Initialize the dlt project in `dlt/` with the Snowflake destination (`dlt/load_olist.py`, self-contained `dlt/.dlt/`)
+- `[x]` Configure connection + secrets (key-pair via `dlt/.dlt/secrets.toml`, gitignored; `private_key_path` → `.keys/olist_loader.p8`)
+- `[x]` Full-refresh the **5** reference/dim tables (products, sellers, geolocation, category_translation, **customers**) → `RAW`
+- `[x]` Merge the 4 transactional tables (orders, order_items, payments, reviews) → `RAW`; **cursor** incremental on orders + reviews (real timestamps), merge-on-PK for order_items + payments (no cursor) — RAW kept 1:1 (ADR-013)
+- `[x]` Seed incrementals in two passes (through 2017, then 2018 as the "new" batch)
+- `[x]` Fetch FX rates (Frankfurter, BRL→USD/EUR, long format) → `RAW.fx_rates` (1,088 rows)
+- `[x]` Verify RAW row counts match the source CSVs (all 9 exact; parsed with a real CSV reader, not line-count)
 
 ## Phase 3 — Transform: dbt Staging (L3)  `[ ]`
 

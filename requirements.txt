@@ -5,7 +5,8 @@
 # NOTE: Airflow/Astro manages its own dependencies in airflow/requirements.txt
 #       (generated later by `astro dev init`). Do NOT add Airflow deps here.
 
-dlt[snowflake]==1.28.0
+dlt[snowflake,parquet]==1.28.0   # parquet extra = pyarrow, needed to load pandas DataFrames
 dbt-core==1.11.11
 dbt-snowflake==1.11.5
 requests==2.34.2          # FX rate API (Frankfurter) fetch
+pandas==3.0.3             # CSV extraction in the dlt load pipeline

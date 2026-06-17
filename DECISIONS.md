@@ -107,6 +107,41 @@ password auth (weaker for service accounts); managed-access schemas (heavier tha
 single future grant for this scope); custom roles owning objects (Option A/B —
 muddier ownership than SYSADMIN-owns-infra).
 
+## ADR-013 — Phase 2 dlt load: RAW stays 1:1; cursor where the data allows
+**Status:** Accepted · **Date:** 2026-06-16
+**Context:** ADR-005 mandates incremental-merge on "a timestamp cursor" for the 4
+transactional tables, and `setup.sql` calls RAW a 1:1 landing zone. Inspecting the
+real CSVs surfaced two conflicts: (a) `customers` (the 9th table) is in neither of
+ADR-005's buckets; (b) `order_payments` has **no** date column and `order_items` has
+only a shipping deadline — so neither can carry a real timestamp cursor without
+injecting a derived column, which would break RAW's 1:1 fidelity.
+**Decision:**
+- `customers` → **full-refresh** (replace). So 5 full-refresh (products, sellers,
+  geolocation, product_category_name_translation, customers) + 4 merge.
+- **RAW stays strictly 1:1** — no derived columns. Therefore cursor-based incremental
+  (`dlt.sources.incremental`) only on `orders` (`order_purchase_timestamp`) and
+  `order_reviews` (`review_creation_date`). `order_items` / `order_payments` use
+  **merge on composite PK, no cursor**; their two seed passes are split by
+  parent-order-id membership.
+- Merge keys (verified): orders `order_id`; order_items `(order_id, order_item_id)`;
+  order_payments `(order_id, payment_sequential)`; order_reviews `(review_id, order_id)`
+  — `review_id` alone is NOT unique (98,410 distinct vs 99,224 rows).
+- Two-pass seed: pass 1 = through 2017, pass 2 = 2018 (`orders`/`reviews` split on their
+  own cursor; `order_items`/`order_payments` on parent-order membership).
+- Extraction = pandas `@dlt.resource` per table (`dtype=str` on zip prefixes to keep
+  leading zeros); FX = Frankfurter long format (`rate_date, base, quote, rate`).
+- New deps: `pandas`, and `pyarrow` via dlt's `parquet` extra (required to load
+  pandas DataFrames). Self-contained dlt project under `dlt/`; key-pair auth via
+  `private_key_path`.
+**Rationale:** Honesty over a tidy-but-false uniform-cursor story. All 4 transactional
+tables demonstrate idempotent merge; 2 of 4 demonstrate true cursor extraction —
+documented as such (README caveat). Keeping RAW 1:1 protects provenance (the project's
+DNA). Verified: every RAW table matches its parsed CSV count exactly after both passes.
+**Rejected alternatives:** Injecting a derived `order_purchase_timestamp` into
+order_items/payments for a uniform cursor (breaks RAW 1:1); forcing `customers` into the
+incremental group (no cursor exists); the dlt filesystem-readers source (more abstraction,
+weaker leading-zero control at this scale).
+
 ---
 
 ## Provisional decisions (sensible defaults; owner may revisit)

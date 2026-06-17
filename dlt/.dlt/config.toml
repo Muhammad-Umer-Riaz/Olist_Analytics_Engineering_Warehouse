@@ -1,0 +1,5 @@
+# dlt project config — COMMITTED. No secrets in this file.
+# Credentials (Snowflake key-pair) live in secrets.toml, which is gitignored.
+
+[runtime]
+log_level = "INFO"

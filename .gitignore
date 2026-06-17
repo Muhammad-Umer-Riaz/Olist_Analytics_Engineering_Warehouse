@@ -37,6 +37,10 @@ logs/
 # dlt  (local pipeline state / working dirs)
 # ─────────────────────────────────────────────────────────────
 .dlt/
+# Re-include the dlt project's config dir + config.toml, but never its secrets:
+!dlt/.dlt/
+!dlt/.dlt/config.toml
+dlt/.dlt/secrets.toml
 *.duckdb
 
 # ─────────────────────────────────────────────────────────────
