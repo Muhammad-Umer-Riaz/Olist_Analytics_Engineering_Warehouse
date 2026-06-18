@@ -304,6 +304,11 @@ with a reason column — never silently drop them.
 and kept** (3-state `is_payment_reconciled`), **not** quarantined — the data showed most are
 legitimate credit-card financing fees, so quarantining them would silent-drop real revenue. The
 rejects table holds only genuinely-broken/excluded rows (orphans = 0; `order_no_payment` = 1).
+**Validated in Phase 6 (singular tests):** the conditional-null rule (status `delivered` ⇒
+delivery date present) is asserted as a singular test at **warn** severity — it surfaces 8 known
+Olist source anomalies (orders marked delivered with no customer-delivery timestamp; 7 of 8 still
+reached the carrier, so it's a data-capture gap, not a fake delivery). Kept in the fact and made
+visible, not quarantined — consistent with the hybrid policy above. README caveat to follow.
 **Rationale:** Echoes the owner's "Provenance" audit DNA (every value traceable).
 
 ## ADR-010 — Distance enrichment (buyer↔seller)

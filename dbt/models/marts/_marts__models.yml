@@ -32,9 +32,16 @@ models:
         data_tests: [not_null]
       - name: customer_zip_code_prefix
         description: >
-          FK to dim_geography. NOT relationship-tested as an error: some customer
-          zips are absent from the geolocation source (known coverage gap) — revisit
-          as a warn-severity test in Phase 6.
+          FK to dim_geography. Relationship-tested at warn severity (not error):
+          some customer zips are absent from the geolocation source (known coverage
+          gap), so the warn keeps the gap visible every run without failing the suite.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_geography')
+                field: zip_code_prefix
+              config:
+                severity: warn
       - name: customer_city
       - name: customer_state
 
@@ -45,7 +52,16 @@ models:
         description: PK.
         data_tests: [unique, not_null]
       - name: seller_zip_code_prefix
-        description: FK to dim_geography (same coverage caveat as dim_customers).
+        description: >
+          FK to dim_geography (same coverage caveat as dim_customers).
+          Relationship-tested at warn severity.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_geography')
+                field: zip_code_prefix
+              config:
+                severity: warn
       - name: seller_city
       - name: seller_state
 

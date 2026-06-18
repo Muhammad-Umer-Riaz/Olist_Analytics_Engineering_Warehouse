@@ -72,14 +72,15 @@ The star schema — the real modeling work. See `DECISIONS.md` ADR-016 + `plans/
 - `[x]` `fct_orders` at order grain (99,441, no fan-out): delivery, payment, review, 3-state reconciliation + 3 role-playing date keys
 - `[x]` `customer_summary` at person grain (96,096 = distinct `customer_unique_id`): RFM (NTILE 5) + AOV + historical CLV; `rfm_bucket`/`aov` macros built here
 
-## Phase 6 — Test & Document (L4)  `[ ]`
+## Phase 6 — Test & Document (L4)  `[x]`
 
-Trustworthy, auditable data — honor the Provenance DNA.
+Trustworthy, auditable data — honor the Provenance DNA. See `plans/6.test-and-document.md`. **52 marts tests: 49 PASS, 3 documented WARN, 0 ERROR.**
 
-- `[ ]` Generic tests: unique, not_null, relationships, accepted_values (order_status, payment_type, review_score 1–5)
-- `[ ]` Singular tests: no negative price/freight, delivered ≥ purchase, payment reconciles, no orphan fact keys
-- `[ ]` Conditional null tests per the confirmed Q6 policy
-- `[ ]` Generate dbt docs (lineage graph)
+- `[x]` Generic tests: unique, not_null, relationships, accepted_values — comprehensive across all layers (no new generics needed in Phase 6; coverage already complete)
+- `[x]` Singular tests (`dbt/tests/`): `assert_no_negative_money`, `assert_delivered_after_purchase`, `assert_fct_items_reconcile_to_orders` (cross-fact, 0 mismatches), `assert_delivered_orders_have_delivery_date`. **No-orphan / payment-reconcile-gate intentionally skipped** — orphans already covered by fact-FK `relationships`; reconciliation *mismatches* are flagged-and-kept (3-state), not a fail gate (ADR-009/015)
+- `[x]` Conditional null test per Q6: delivered ⇒ delivery date present, at **warn** severity (surfaces 8 known Olist source anomalies; documented in ADR-009)
+- `[x]` Added deferred `zip → dim_geography` relationship tests (warn): 278 customer + 7 seller zips absent from geolocation (known coverage gap)
+- `[x]` Generated dbt docs + lineage graph → `figures/dbt-lineage-dag.png`, `dbt-docs-project-tree.png`, `dbt-docs-database-tree.png`
 
 ## Phase 7 — Orchestrate: Airflow (L5)  `[ ]`
 
