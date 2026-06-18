@@ -226,6 +226,65 @@ revenue); a 2-state reconciliation flag (miscasts canceled orders as mismatches)
 FX (invents or leaks rates); array or most-frequent `payment_type` (loses value-weighting / re-opens
 ties); dropping the 0-row orphan guards (they protect future incremental loads).
 
+## ADR-016 — Phase 5 dbt marts: star schema, hybrid keys, conformed geography, role-playing dates
+**Status:** Accepted · **Date:** 2026-06-18
+**Context:** The BI-facing star schema (L3 marts), built on the Phase 4 intermediate
+layer. Locked anchors: two facts not one (ADR-007), two-layer customer grain
+(ADR-006). Owner's learning goal: justify each view-vs-table call + learn surrogate
+keys / star schema. Plan grilled (`/grill-me`); decisions D1–D8 below.
+**Decision:**
+- **D1 Keying = HYBRID.** Keep opaque natural keys (`customer_id`, `product_id`,
+  `seller_id`, `order_id`) as entity-dim join keys — already unique/stable, no SCD.
+  Surrogate only where it earns it: `date_key` (YYYYMMDD int) for `dim_dates`; zip
+  prefix as natural key for `dim_geography`. (Don't cargo-cult a hash over a hash.)
+- **D2 Geography = CONFORMED `dim_geography`** keyed on zip; holds city/state/lat/lng
+  once; `dim_customers`/`dim_sellers` carry zip as FK. Accepts a mild snowflake.
+- **D3 Materialization = ALL marts `table`, no incremental.** BI reads them
+  repeatedly; upstream is all views (a mart-view recomputes the whole DAG/query).
+  Incremental skipped (static source; already demonstrated at the dlt load layer).
+- **D4 `dim_dates` = full calendar years 2016-01-01→2018-12-31** (`date_spine`,
+  end-exclusive → +1 day) + **BR national-holiday seed** `seeds/br_holidays.csv`
+  (incl. Easter-derived Carnival/Good Friday/Corpus Christi). ISO weekday/week
+  (`dayofweekiso`/`weekiso`) so the dim is session-independent. Static seed ≠ live
+  source (ADR-004 holds). Seed lands in STAGING (transformer can't write RAW/create
+  schemas, ADR-012).
+- **D5 Role-playing dates = 3 roles + raw timestamps.** `fct_orders` carries
+  purchase / delivered-customer (null when undelivered = signal) / estimated date
+  keys; `fct_order_items` carries purchase date key. Approved/carrier = raw ts only.
+- **D6 Item-grain FX = revenue only → USD+EUR.** `fct_order_items` keeps
+  price/freight/revenue BRL, adds `revenue_usd|eur` = `brl_to(revenue, rate)` on the
+  order's purchase date (same anchor as `fct_orders` → the two facts reconcile).
+  Inner-join items→orders enforces "no orphan fact keys" (orphans documented in
+  `int_olist__rejects`).
+- **D7 `customer_summary` monetary = item revenue (price+freight).** Person grain
+  (`customer_unique_id`). Merchant-received money (excludes card-issuer financing —
+  the 264 overpaid orders). Recency/Monetary via NTILE(5) (deterministic tie-break);
+  **Frequency scored BY VALUE** (`least(frequency,5)`) — NTILE on frequency is wrong
+  here (Olist is ~97% one-time buyers; a quintile forces ~2/5 of single-purchase
+  customers into f>=4 and mislabels them "Loyal"). Recency vs dataset max order date
+  (static); AOV + **historical** CLV (=monetary, labeled honestly). New macros
+  `aov`, `rfm_bucket`.
+- **D8 City/state = native on dims + zip FK for coordinates.** `dim_customers`/
+  `dim_sellers` keep their source city/state (full coverage), carry zip FK to
+  `dim_geography` for lat/lng. Refines D2 so city/state has no coverage gap.
+**Verified against data:** 8 models built as tables, **46/46 marts tests pass**
+(incl. all fact-FK `relationships` → the star joins). No fan-out: fct_orders =
+99,441, fct_order_items = 112,650 (= stg order_items), customer_summary = 96,096
+(= distinct `customer_unique_id`). dim_dates = 1,096 days (2016 leap).
+**Honest caveats:** Olist is ~97% one-time buyers, so Frequency is scored by value
+(not NTILE — a quintile mislabels one-time buyers as "Loyal"; caught when "Loyal"
+came out as the largest segment on the first build, then fixed). Segmentation
+correctly leans on Recency/Monetary. CLV is historical,
+not predictive. `zip→dim_geography` is NOT relationship-tested as an error (known
+coverage gap; revisit as warn-severity in Phase 6).
+**Rejected alternatives:** full surrogate keys on every dim (hashing already-unique
+hashes, no SCD/decoupling benefit); natural keys only (skips the surrogate concept);
+denormalizing geography into each dim (duplicates city/state, drops the conformed
+dim); mart-as-view (recomputes the DAG per BI query); incremental facts (academic on
+a static source); converting price/freight separately (cent-rounding drift vs the
+BRL revenue definition); payment-value monetary (inflated by financing that never
+reaches the merchant).
+
 ---
 
 ## Provisional decisions (sensible defaults; owner may revisit)

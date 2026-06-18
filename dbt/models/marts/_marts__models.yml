@@ -1,0 +1,218 @@
+version: 2
+
+models:
+  # ===========================================================================
+  # Dimensions
+  # ===========================================================================
+  - name: dim_geography
+    description: >
+      Conformed geography dimension, one row per zip code prefix (cleaned in
+      staging: median coords + deterministic modal city/state). Shared by
+      dim_customers and dim_sellers via their zip_prefix FK.
+    columns:
+      - name: zip_code_prefix
+        description: Natural key (PK).
+        data_tests: [unique, not_null]
+      - name: city
+      - name: state
+      - name: latitude
+      - name: longitude
+
+  - name: dim_customers
+    description: >
+      Customer dimension at the per-order grain (customer_id, ADR-006).
+      customer_unique_id links the real person; customer_summary holds person-grain
+      analytics.
+    columns:
+      - name: customer_id
+        description: PK — per-order customer key (fact join key).
+        data_tests: [unique, not_null]
+      - name: customer_unique_id
+        description: The real person across their many orders.
+        data_tests: [not_null]
+      - name: customer_zip_code_prefix
+        description: >
+          FK to dim_geography. NOT relationship-tested as an error: some customer
+          zips are absent from the geolocation source (known coverage gap) — revisit
+          as a warn-severity test in Phase 6.
+      - name: customer_city
+      - name: customer_state
+
+  - name: dim_sellers
+    description: Seller dimension, one row per seller_id.
+    columns:
+      - name: seller_id
+        description: PK.
+        data_tests: [unique, not_null]
+      - name: seller_zip_code_prefix
+        description: FK to dim_geography (same coverage caveat as dim_customers).
+      - name: seller_city
+      - name: seller_state
+
+  - name: dim_products
+    description: >
+      Product dimension, one row per product_id, with English category attached
+      (NULL when untranslated = signal).
+    columns:
+      - name: product_id
+        description: PK.
+        data_tests: [unique, not_null]
+      - name: product_category_name
+        description: Portuguese category (kept for traceability).
+      - name: product_category_name_english
+        description: English category; NULL when no translation exists.
+
+  - name: dim_dates
+    description: >
+      Calendar dimension, one row per day 2016-01-01..2018-12-31. ISO weekday/week
+      (session-independent). is_holiday from the br_holidays seed.
+    columns:
+      - name: date_key
+        description: PK — YYYYMMDD integer surrogate; the role-playing FK on facts.
+        data_tests: [unique, not_null]
+      - name: date_day
+        data_tests: [unique, not_null]
+      - name: is_weekend
+        data_tests: [not_null]
+      - name: is_holiday
+        data_tests: [not_null]
+
+  # ===========================================================================
+  # Facts
+  # ===========================================================================
+  - name: fct_orders
+    description: >
+      Order-grain fact (one row per order_id, ADR-007), built on
+      int_olist__orders_enriched. Delivery, payment, review, FX, 3-state
+      reconciliation + role-playing date keys.
+    columns:
+      - name: order_id
+        description: Grain (PK).
+        data_tests: [unique, not_null]
+      - name: customer_id
+        description: FK to dim_customers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+      - name: order_purchase_date_key
+        description: Role-playing FK to dim_dates (purchase date).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_dates')
+                field: date_key
+      - name: order_delivered_customer_date_key
+        description: Role-playing FK to dim_dates; NULL when undelivered (signal).
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_dates')
+                field: date_key
+      - name: order_estimated_delivery_date_key
+        description: Role-playing FK to dim_dates (estimated delivery).
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_dates')
+                field: date_key
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [delivered, shipped, canceled, unavailable,
+                         invoiced, processing, created, approved]
+      - name: primary_payment_type
+        description: NULL for orders with no payment (accepted_values ignores nulls).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [credit_card, boleto, voucher, debit_card, not_defined]
+      - name: review_score
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+
+  - name: fct_order_items
+    description: >
+      Order-item-grain fact (one row per order_id + order_item_id, ADR-007). Revenue
+      in BRL + item-grain FX (USD/EUR) on the order's purchase date.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, order_item_id]
+    columns:
+      - name: order_id
+        data_tests: [not_null]
+      - name: order_item_id
+        data_tests: [not_null]
+      - name: product_id
+        description: FK to dim_products.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_id
+      - name: seller_id
+        description: FK to dim_sellers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sellers')
+                field: seller_id
+      - name: customer_id
+        description: FK to dim_customers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+      - name: order_purchase_date_key
+        description: FK to dim_dates (purchase date).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_dates')
+                field: date_key
+      - name: revenue_brl
+        description: price + freight (BRL).
+        data_tests: [not_null]
+      - name: revenue_usd
+        description: revenue converted to USD on the purchase date.
+        data_tests: [not_null]
+      - name: revenue_eur
+        description: revenue converted to EUR on the purchase date.
+        data_tests: [not_null]
+
+  # ===========================================================================
+  # Person-grain summary
+  # ===========================================================================
+  - name: customer_summary
+    description: >
+      Person-grain RFM/CLV summary (one row per customer_unique_id, ADR-006).
+      Monetary = item revenue; historical CLV. NTILE(5) RFM scores + named segment.
+    columns:
+      - name: customer_unique_id
+        description: Grain (PK) — the real person.
+        data_tests: [unique, not_null]
+      - name: frequency
+        data_tests: [not_null]
+      - name: monetary
+        data_tests: [not_null]
+      - name: rfm_segment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Champions, Loyal Customers, Big Spenders,
+                         Potential Loyalist, New Customers, Promising,
+                         At Risk, Hibernating, Lost, Needs Attention]

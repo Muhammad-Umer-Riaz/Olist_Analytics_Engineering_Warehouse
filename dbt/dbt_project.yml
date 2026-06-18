@@ -19,3 +19,20 @@ models:
     intermediate:
       +materialized: view
       +schema: INTERMEDIATE
+    # Marts are the star schema (dims + facts + customer_summary). Materialized as
+    # TABLES (BI reads them repeatedly; upstream is all views) in the MARTS schema.
+    marts:
+      +materialized: table
+      +schema: MARTS
+
+# Seeds = static reference CSVs (br_holidays feeds dim_dates). The transformer role
+# cannot write RAW or create schemas (ADR-012), so the seed lands in STAGING as
+# cleaned reference data. +schema is verbatim (generate_schema_name override).
+seeds:
+  olist_dbt:
+    +schema: STAGING
+    br_holidays:
+      # Pin types so holiday_date lands as a true DATE (dim_dates joins on it).
+      +column_types:
+        holiday_date: date
+        holiday_name: varchar

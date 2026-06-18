@@ -6,7 +6,7 @@ in [`plans/`](./plans) before each phase begins (see `CLAUDE.md`).
 
 **Convention:** `[ ]` = Not started · `[-]` = In progress · `[x]` = Completed · `[~]` = Dropped
 
-_Last updated: 2026-06-17_
+_Last updated: 2026-06-18_
 
 ---
 
@@ -63,14 +63,14 @@ Business logic + reusable macros. See `DECISIONS.md` ADR-015 + `plans/4.dbt-inte
 - `[x]` PT→EN category join (`int_olist__products_enriched`, deferred from staging); FX gap-fill (`int_olist__fx_rates_filled`, LOCF + leading back-fill)
 - `[x]` **Q6 confirmed (ADR-009/015):** 3-state reconciliation flag (kept) + consolidated `int_olist__rejects` (0 orphans, 1 `order_no_payment`)
 
-## Phase 5 — Transform: dbt Marts (L3)  `[ ]`
+## Phase 5 — Transform: dbt Marts (L3)  `[x]`
 
-The star schema — the real modeling work.
+The star schema — the real modeling work. See `DECISIONS.md` ADR-016 + `plans/5.dbt-marts.md`. 8 models, 46/46 tests pass.
 
-- `[ ]` Dimensions: `dim_customers`, `dim_products`, `dim_sellers`, `dim_dates`, `dim_geography`
-- `[ ]` `fct_order_items` at order-item grain (revenue, freight, product, seller)
-- `[ ]` `fct_orders` at order grain (delivery, payment, review)
-- `[ ]` `customer_summary` at person grain (RFM / CLV)
+- `[x]` Dimensions: `dim_customers` (99,441), `dim_products` (32,951), `dim_sellers` (3,095), `dim_dates` (1,096; full 2016–2018 + BR holiday seed), `dim_geography` (19,015, conformed). Keying = **hybrid** (natural keys for entities; `date_key` YYYYMMDD surrogate; zip natural key). All materialized as **tables**.
+- `[x]` `fct_order_items` at order-item grain (112,650, no fan-out): revenue BRL + **item-grain FX** (USD/EUR on purchase date)
+- `[x]` `fct_orders` at order grain (99,441, no fan-out): delivery, payment, review, 3-state reconciliation + 3 role-playing date keys
+- `[x]` `customer_summary` at person grain (96,096 = distinct `customer_unique_id`): RFM (NTILE 5) + AOV + historical CLV; `rfm_bucket`/`aov` macros built here
 
 ## Phase 6 — Test & Document (L4)  `[ ]`
 
