@@ -285,6 +285,62 @@ a static source); converting price/freight separately (cent-rounding drift vs th
 BRL revenue definition); payment-value monetary (inflated by financing that never
 reaches the merchant).
 
+## ADR-017 — Phase 7 orchestration: Airflow (Astro CLI) + Cosmos, isolated venvs, connection-based creds
+**Status:** Accepted · **Date:** 2026-06-22
+**Context:** Wire the existing load + transform into one observable DAG with real
+dependencies, retries, and a failure branch (L5). Locked anchor: **dlt loads, Airflow
+only orchestrates (ADR-003).** Local stack = Astro CLI (deferred here from Phase 0) →
+Astro Runtime 3.2-5 = **Airflow 3.2.2**, running in Docker containers. The core
+challenge is bridging host → container: today's setup relies on host absolute paths
+(`E:/…/.keys/*.p8` in `profiles.yml`/`secrets.toml`, CSVs in host `data/raw/`) that do
+not exist inside a container. Owner chose the ambitious path on all forks (Cosmos /
+Airflow Connections / single load task) after a 3-question grill.
+**Decision:**
+- **D1 dbt runs via astronomer-cosmos (==1.14.2), NOT a BashOperator.** Cosmos renders
+  the dbt project as one Airflow task per model (`.run` + `.test`) → model-level lineage
+  in the Airflow UI (the AE-role showcase). Parsed from the committed **manifest**
+  (`LoadMode.DBT_MANIFEST`) so DAG parsing is fast and never touches Snowflake.
+- **D2 Dependency isolation = two venvs baked into the image.** `dbt_venv`
+  (`dbt-snowflake==1.11.5`) + `dlt_venv` (`dlt[snowflake,parquet]==1.28.0`, `pandas==3.0.3`).
+  The Airflow env gets only the glue (`astronomer-cosmos`, `apache-airflow-providers-
+  snowflake==6.13.0`). Cosmos calls the `dbt_venv` binary as a subprocess; it never
+  imports dbt. Reason: dbt-core's pins conflict with Airflow's; pandas 3.0/pyarrow are
+  version-sensitive. Resolved cleanly on the first build.
+- **D3 Credentials = two Airflow Connections, least privilege (carries ADR-012 into
+  Airflow).** `snowflake_olist_loader` (role OLIST_LOADER, writes RAW) + `snowflake_
+  olist_transformer` (role OLIST_TRANSFORMER, cannot write RAW). No creds hardcoded in
+  the DAG; defined in gitignored `airflow_settings.yaml`.
+- **D4 Key delivery differs by consumer (keys are UNENCRYPTED PKCS#8 = no passphrase).**
+  Loader → `private_key_file` (path into a read-only `.keys/` mount); dlt reads the path.
+  Transformer → `private_key_content` (PEM inline via YAML block scalar); Cosmos's
+  `SnowflakePrivateKeyPemProfileMapping` wants the key *content* — its file-based mapping
+  **requires a passphrase we don't have**, so content is the fitting mechanism.
+- **D5 One `dlt_load_olist` task runs `load_olist.py` UNCHANGED** (both seed passes) via
+  the `dlt_venv` interpreter; the loader connection's fields are mapped onto dlt's
+  `DESTINATION__SNOWFLAKE__CREDENTIALS__*` env vars at runtime. Airflow never loads (ADR-003).
+- **D6 `schedule=None` (trigger on demand), `retries=2`, explicit failure branch.**
+  Static dump → no point scheduling; `notify_failure` (`trigger_rule=one_failed`) is the
+  failure branch (logs a loud alert; a real deploy would page Slack/email).
+- **D7 Project files reach the container via `docker-compose.override.yml`** mounts:
+  `../dbt` (rw — Cosmos writes `dbt_packages/`+`target/`), `../dlt`/`../data`/`../.keys`
+  (ro). Astro auto-merges the override on top of its generated Compose.
+**Verified against data:** full DAG green in **3m35s**; **52 task nodes (49 in
+`dbt_transform`** = 24 model run + 24 model test + 1 seed) + dlt load + docs + failure
+branch. Each component pre-flighted in isolation (`airflow tasks test`) before the full
+run. MARTS rebuilt to the exact Phase 5/6 counts (`fct_orders` 99,441, `fct_order_items`
+112,650, `customer_summary` 96,096); the 3 known WARN tests stayed warn (green tasks, 0
+ERROR); `notify_failure` correctly **skipped** on success.
+**Honest caveats:** static-dump caveat holds — the DAG demonstrates orchestration
+mechanics, not response to genuinely arriving data. The mount-based setup is the local
+Astro **dev** pattern (a deployed image would COPY the dbt project, not bind-mount it).
+`DBT_MANIFEST` parsing requires regenerating the manifest when models change. Cosmos
+emits Airflow-3 Asset-URI deprecation warnings (cosmetic).
+**Rejected alternatives:** Airflow-as-loader (ADR-003 — the reference repo's weakness);
+a single `dbt build` BashOperator (loses the model-level lineage that justifies Cosmos);
+installing dbt/dlt into the Airflow env (dependency conflicts); the file-based Cosmos
+key mapping (requires a passphrase our keys lack); hardcoded `private_key_path`s in a
+container `profiles.yml` (the host-path coupling this phase exists to remove).
+
 ---
 
 ## Provisional decisions (sensible defaults; owner may revisit)

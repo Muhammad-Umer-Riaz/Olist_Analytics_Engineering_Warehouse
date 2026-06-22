@@ -1,0 +1,25 @@
+# Astro auto-merges this file on top of its generated Compose config.
+# It mounts the repo dirs that live OUTSIDE the airflow/ build context into the
+# containers, so dlt (the load task) and Cosmos (the dbt tasks) can reach the
+# project files, the source CSVs, and the key-pair private keys.
+#
+# Host paths are relative to this file's directory (airflow/), so `..` = repo root.
+# These volumes are APPENDED to Astro's own mounts (dags/, include/, plugins/, logs/).
+#
+# Mounted on scheduler (executes tasks) + dag-processor (parses the DAG, where
+# Cosmos renders the dbt project) + triggerer/api-server for consistency.
+x-olist-mounts: &olist-mounts
+  - ../dbt:/usr/local/airflow/dbt:rw      # Cosmos reads the project; writes dbt_packages/ + target/
+  - ../dlt:/usr/local/airflow/dlt:ro      # load_olist.py + .dlt/config.toml (read-only)
+  - ../data:/usr/local/airflow/data:ro    # the 9 source CSVs load_olist.py reads (read-only)
+  - ../.keys:/usr/local/airflow/keys:ro   # key-pair private keys (read-only)
+
+services:
+  scheduler:
+    volumes: *olist-mounts
+  dag-processor:
+    volumes: *olist-mounts
+  triggerer:
+    volumes: *olist-mounts
+  api-server:
+    volumes: *olist-mounts

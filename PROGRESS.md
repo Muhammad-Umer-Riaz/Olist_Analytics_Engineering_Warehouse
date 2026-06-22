@@ -6,7 +6,7 @@ in [`plans/`](./plans) before each phase begins (see `CLAUDE.md`).
 
 **Convention:** `[ ]` = Not started · `[-]` = In progress · `[x]` = Completed · `[~]` = Dropped
 
-_Last updated: 2026-06-18_
+_Last updated: 2026-06-22_
 
 ---
 
@@ -82,14 +82,14 @@ Trustworthy, auditable data — honor the Provenance DNA. See `plans/6.test-and-
 - `[x]` Added deferred `zip → dim_geography` relationship tests (warn): 278 customer + 7 seller zips absent from geolocation (known coverage gap)
 - `[x]` Generated dbt docs + lineage graph → `figures/dbt-lineage-dag.png`, `dbt-docs-project-tree.png`, `dbt-docs-database-tree.png`
 
-## Phase 7 — Orchestrate: Airflow (L5)  `[ ]`
+## Phase 7 — Orchestrate: Airflow (L5)  `[x]`
 
-Wire it all into one DAG with real dependencies.
+Wire it all into one DAG with real dependencies. See `DECISIONS.md` ADR-017 + `plans/7.airflow-orchestration.md`. **Full DAG green in 3m35s; 52 task nodes (49 dbt via Cosmos); MARTS rebuilt to exact Phase 5/6 counts.**
 
-- `[ ]` `astro dev init` inside `airflow/`
-- `[ ]` DAG: `dlt_load_olist` (parallel tasks) + `fetch_fx` → `dbt run` → `dbt test` → `dbt docs`
-- `[ ]` Add retries and a failure branch
-- `[ ]` Run the DAG locally end-to-end and verify
+- `[x]` Astro CLI installed; `astro dev init` in `airflow/` → Astro Runtime 3.2-5 (**Airflow 3.2.2**). Dependency-isolated image: `dbt_venv` + `dlt_venv` (ADR-017 D2); Airflow env gets only `astronomer-cosmos`==1.14.2 + snowflake provider
+- `[x]` DAG `olist_elt`: `dlt_load_olist` (runs `load_olist.py` unchanged via `dlt_venv`, creds from loader Connection) → **Cosmos `DbtTaskGroup`** (model-level run+test, transformer Connection) → `dbt_docs_generate`. Two Airflow Connections = ADR-012 least-privilege carried into Airflow; key delivery loader=file / transformer=content (ADR-017 D4). Project files mounted via `docker-compose.override.yml`
+- `[x]` Retries (`retries=2`) + explicit failure branch (`notify_failure`, `trigger_rule=one_failed`); `schedule=None` (static dump → trigger on demand)
+- `[x]` Ran locally end-to-end & verified: 49 dbt tasks pass (3 known WARN stay warn, 0 ERROR), `notify_failure` skipped on success, MARTS counts match (99,441 / 112,650 / 96,096). Each task pre-flighted in isolation (`airflow tasks test`) first
 
 ## Phase 8 — BI Layer (L6)  `[ ]`
 

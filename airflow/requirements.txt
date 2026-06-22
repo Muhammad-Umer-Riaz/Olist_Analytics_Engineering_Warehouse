@@ -1,0 +1,13 @@
+# Packages installed INTO the Airflow environment (Astro Runtime image).
+# dbt and dlt are deliberately NOT here — they live in isolated virtualenvs built
+# in the Dockerfile so their dependencies never clash with Airflow's (ADR-017).
+#
+# Only the orchestration glue belongs here:
+#   - astronomer-cosmos: renders the dbt project as Airflow tasks (model-level DAG).
+#   - apache-airflow-providers-snowflake: the Snowflake Connection type Cosmos's
+#     profile mapping and our dlt task read credentials from.
+#
+# Versions pinned to what resolved on the first build (Airflow 3.2.2 / Astro
+# Runtime 3.2-5) for reproducibility.
+astronomer-cosmos==1.14.2
+apache-airflow-providers-snowflake==6.13.0
