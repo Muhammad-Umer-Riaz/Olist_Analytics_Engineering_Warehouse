@@ -374,14 +374,65 @@ allows** after the core is solid. Not a starting assumption.
 
 ---
 
-## Open decisions (pending owner)
-
 ## ADR-011 — BI tool
-**Status:** Open — pending owner · **Date:** 2026-06-16
-**Context:** Last layer (L6); reads MARTS.
-**Options:**
-- **Power BI** (recommended) — recognized by target data/ops-analyst roles, native
-  Snowflake connector, reuses existing strength.
-- **Evidence.dev** — BI-as-code in SQL, lives in the repo, no hosting, reads very
-  analytics-engineer, but less recruiter-recognized.
-**Decision:** _Pending._ Build L0–L5 fully first; BI is last.
+**Status:** Decided · **Date:** 2026-06-22 (opened 2026-06-16)
+**Context:** Last layer (L6); reads MARTS. Two competing values: recruiter-recognition
+(favours Power BI) vs the project's everything-as-code / auditable DNA (favours a
+BI-as-code tool that lives in the repo).
+**Decision:** **Power BI**, authored in the **`.pbip` (Power BI Project) text format**
+(TMDL semantic model + PBIR report JSON), built with **`pbi-cli`** (a Python CLI that
+drives Power BI Desktop via the .NET Tabular Object Model and edits PBIR JSON directly).
+This collapses the tension: Power BI is the CV-recognized tool, while `.pbip` makes the
+model + report **plain-text, diff-able, and version-controlled in the repo** — keeping
+the auditable DNA. pbi-cli also fits the "Claude generates, owner drives" model better
+than raw Power BI: Claude authors measures/visuals via CLI; the owner reviews diffs,
+rather than receiving click-by-click GUI scripts.
+**Rejected alternatives:**
+- **Evidence.dev** — BI-as-code in SQL, lives in the repo, reads very analytics-engineer,
+  but **less recruiter-recognized**; and would mean learning yet another new tool right
+  after Airflow. The `.pbip` route gets the in-repo/auditable benefit *without* the
+  recognition cost.
+- **Raw Power BI (`.pbix`)** — recognized, but a **binary blob**: not diff-able, not
+  reviewable, breaks the everything-as-code story; forces owner-driven GUI clicking.
+**Consequences / caveats (honest):**
+- **New dev dependency** (pbi-cli; bundles Microsoft Analysis Services DLLs — MIT +
+  Microsoft license). Young, niche tool → early-adopter risk. Bounded fallback: if it
+  fights us, build the `.pbip` by hand in Desktop / screenshot a normally-built report.
+- **Windows + Power BI Desktop required**, Desktop must be running for semantic-model ops
+  (not headless/CI). Owner is on Windows 11 — fine.
+- **pbi-cli does not connect to Snowflake.** The Snowflake→MARTS connection is a one-time
+  owner-driven GUI step in Desktop (`Get Data → Snowflake`); pbi-cli then operates on the
+  already-connected model.
+- **Publishing** to Power BI *Service* (live shareable link) needs a free Fabric / Pro
+  account. Out of scope for the showcase — local Desktop + `.pbip` in repo + screenshots
+  suffice. Revisit only if a hosted link is wanted.
+
+---
+
+## ADR-018 — Phase 8 BI implementation realities (pbi-cli + Power BI Desktop)
+**Status:** Decided · **Date:** 2026-06-23
+**Context:** Executing ADR-011. The build surfaced several hard tooling constraints that
+future sessions must respect (full detail in the `pbi-cli-connection-workaround` memory).
+**Decisions / findings:**
+- **pbi-cli must be installed from git `master` (v3.11.2), NOT PyPI.** The published
+  `pbi-cli-tool` is frozen at **1.0.6 (Mar 2026)** — an old MCP-based architecture with **no
+  report layer** and several bugs (broken relationship delete/deactivate, stdin-BOM measure
+  corruption, dead `dax execute` display). Git master is the *current, mature* version
+  (in-process .NET TOM, full PBIR report layer, 32 visual types, bugs fixed). Install:
+  `pipx uninstall pbi-cli-tool` then `pipx install "git+https://github.com/MinaSaad1/pbi-cli.git"`.
+- **Power BI Desktop must be a current (2026) build.** pbi-cli writes PBIR **schema 2.7.0**;
+  the owner's Mar-2025 build (v2.141) couldn't open it (`Can't resolve schema '2.7.0'`) and
+  also lacked the key-pair Snowflake auth option. Updating Desktop fixed both.
+- **Auth to Snowflake = password** (untyped Snowflake user, MFA-exempt), not key-pair —
+  forced by the old Desktop's connector; the new build supports key-pair but we did not
+  re-migrate. The **least-privilege boundary is the `OLIST_REPORTER` role** (reads MARTS
+  only), which is unchanged — only the auth method differs from the loader/transformer
+  key-pair users (ADR-012). Defensible, documented.
+- **Build is file-based + offline:** report-layer commands edit PBIR JSON directly (no live
+  connection); Desktop must be **closed** during writes (it holds in-memory state that would
+  overwrite file edits on save) and **reopened** to view. Desktop auto-sync is not configured.
+- **Status at this ADR:** semantic model (12 relationships, 21 measures) + **Page 1 (Sales)**
+  built as code and reconciled to marts. Pages 2–3, blank-category filtering, theming, and a
+  dedicated `_Measures` table remain (next session).
+**Rejected alternative:** staying on PyPI 1.0.6 — dead end (no report layer; the visual build
+is impossible there).

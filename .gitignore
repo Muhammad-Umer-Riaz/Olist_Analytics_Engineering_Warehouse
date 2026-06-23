@@ -63,6 +63,13 @@ webserver_config.py
 !/data/raw/.gitkeep
 
 # ─────────────────────────────────────────────────────────────
+# Power BI  (.pbip project: track the TMDL model + PBIR report as code;
+# ignore the binary export and Desktop-local editor cache/settings)
+# ─────────────────────────────────────────────────────────────
+*.pbix
+**/.pbi/
+
+# ─────────────────────────────────────────────────────────────
 # Handoff doc (local only)
 .handoff.md
 

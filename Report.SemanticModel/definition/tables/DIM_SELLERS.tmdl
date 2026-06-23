@@ -1,0 +1,48 @@
+table DIM_SELLERS
+	lineageTag: 45937d8e-a7a8-41a2-8b32-ab719f5ce3a6
+
+	column SELLER_ID
+		dataType: string
+		lineageTag: 3fe8dd65-f75f-4739-b46f-fc777fc3f8b9
+		summarizeBy: none
+		sourceColumn: SELLER_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column SELLER_ZIP_CODE_PREFIX
+		dataType: string
+		lineageTag: e4e63ea0-277c-46dd-b920-b2438e108db1
+		summarizeBy: none
+		sourceColumn: SELLER_ZIP_CODE_PREFIX
+
+		annotation SummarizationSetBy = Automatic
+
+	column SELLER_CITY
+		dataType: string
+		lineageTag: b11d0974-08de-42df-8b1c-6c270110082c
+		summarizeBy: none
+		sourceColumn: SELLER_CITY
+
+		annotation SummarizationSetBy = Automatic
+
+	column SELLER_STATE
+		dataType: string
+		lineageTag: fb54dc38-c040-48ca-88e0-1e44c5a63848
+		summarizeBy: none
+		sourceColumn: SELLER_STATE
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DIM_SELLERS = m
+		mode: import
+		source =
+				let
+				    Source = Snowflake.Databases("VHGALJN-NEB29791.snowflakecomputing.com","OLIST_WH",[Implementation="2.0", Role="OLIST_REPORTER"]),
+				    OLIST_Database = Source{[Name="OLIST",Kind="Database"]}[Data],
+				    MARTS_Schema = OLIST_Database{[Name="MARTS",Kind="Schema"]}[Data],
+				    DIM_SELLERS_Table = MARTS_Schema{[Name="DIM_SELLERS",Kind="Table"]}[Data]
+				in
+				    DIM_SELLERS_Table
+
+	annotation PBI_ResultType = Table
+

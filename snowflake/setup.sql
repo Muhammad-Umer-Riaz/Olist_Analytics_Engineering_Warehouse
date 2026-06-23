@@ -118,6 +118,40 @@ GRANT ROLE OLIST_TRANSFORMER TO USER OLIST_TRANSFORMER_SVC;
 
 
 -- =============================================================================
+-- 3b) BI READER  — Power BI reads MARTS only (Phase 8 / ADR-011, ADR-018)
+--     Third scoped role, extending ADR-012 least privilege into the BI layer.
+--     Auth note: Power BI Desktop's build at setup time lacked key-pair auth, so
+--     this user authenticates by PASSWORD (untyped user = MFA-exempt). The role
+--     scoping below — read MARTS, nothing else — is the real security boundary.
+-- =============================================================================
+USE ROLE SECURITYADMIN;
+
+CREATE ROLE IF NOT EXISTS OLIST_REPORTER
+    COMMENT = 'BI service role — reads MARTS only (Power BI)';
+GRANT ROLE OLIST_REPORTER TO ROLE SYSADMIN;
+
+GRANT USAGE ON WAREHOUSE OLIST_WH TO ROLE OLIST_REPORTER;
+GRANT USAGE ON DATABASE  OLIST    TO ROLE OLIST_REPORTER;
+
+-- Read MARTS only (existing + future tables/views); no access to RAW/STAGING/INTERMEDIATE.
+GRANT USAGE  ON SCHEMA OLIST.MARTS                   TO ROLE OLIST_REPORTER;
+GRANT SELECT ON ALL    TABLES IN SCHEMA OLIST.MARTS  TO ROLE OLIST_REPORTER;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA OLIST.MARTS  TO ROLE OLIST_REPORTER;
+GRANT SELECT ON ALL    VIEWS  IN SCHEMA OLIST.MARTS  TO ROLE OLIST_REPORTER;
+GRANT SELECT ON FUTURE VIEWS  IN SCHEMA OLIST.MARTS  TO ROLE OLIST_REPORTER;
+
+-- Password user (untyped => password auth, MFA-exempt). Set a strong password below;
+-- do NOT commit the real value. Rotate with: ALTER USER OLIST_REPORTER_SVC SET PASSWORD = '...';
+CREATE USER IF NOT EXISTS OLIST_REPORTER_SVC
+    PASSWORD             = '<set-a-strong-password>'
+    MUST_CHANGE_PASSWORD = FALSE
+    DEFAULT_ROLE         = OLIST_REPORTER
+    DEFAULT_WAREHOUSE    = OLIST_WH
+    COMMENT              = 'Power BI service user (role OLIST_REPORTER, password auth)';
+GRANT ROLE OLIST_REPORTER TO USER OLIST_REPORTER_SVC;
+
+
+-- =============================================================================
 -- 4) SANITY CHECKS (optional — run individually after the above)
 -- =============================================================================
 -- SHOW WAREHOUSES        LIKE 'OLIST_WH';

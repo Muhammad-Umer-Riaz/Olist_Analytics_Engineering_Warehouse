@@ -1,0 +1,110 @@
+table DIM_PRODUCTS
+	lineageTag: 29a83f50-ac2b-485c-be65-ed99abcdee7b
+
+	column PRODUCT_ID
+		dataType: string
+		lineageTag: a33e5209-f39b-4dc9-a62e-98ffe8ba3b22
+		summarizeBy: none
+		sourceColumn: PRODUCT_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column PRODUCT_CATEGORY_NAME
+		dataType: string
+		lineageTag: 6d6dd4f3-9875-4342-9fcd-3147954282a2
+		summarizeBy: none
+		sourceColumn: PRODUCT_CATEGORY_NAME
+
+		annotation SummarizationSetBy = Automatic
+
+	column PRODUCT_CATEGORY_NAME_ENGLISH
+		dataType: string
+		lineageTag: 2d3c9ca2-4912-4d6d-a7b3-68aeba0d4fb5
+		summarizeBy: none
+		sourceColumn: PRODUCT_CATEGORY_NAME_ENGLISH
+
+		annotation SummarizationSetBy = Automatic
+
+	column PRODUCT_NAME_LENGTH
+		dataType: double
+		lineageTag: bb51145d-8bbd-46a6-992f-b09907b752f5
+		summarizeBy: none
+		sourceColumn: PRODUCT_NAME_LENGTH
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PRODUCT_DESCRIPTION_LENGTH
+		dataType: double
+		lineageTag: 2c53296f-773a-4595-a680-19682fe66acd
+		summarizeBy: none
+		sourceColumn: PRODUCT_DESCRIPTION_LENGTH
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PRODUCT_PHOTOS_QTY
+		dataType: double
+		lineageTag: 4cb321d5-81b6-48c5-b232-f0cdc234af0b
+		summarizeBy: none
+		sourceColumn: PRODUCT_PHOTOS_QTY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PRODUCT_WEIGHT_G
+		dataType: double
+		lineageTag: 64151566-6328-4af7-b1b1-ccd9a4d52d32
+		summarizeBy: none
+		sourceColumn: PRODUCT_WEIGHT_G
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PRODUCT_LENGTH_CM
+		dataType: double
+		lineageTag: 5d7d01ba-2e5f-4297-9f34-0e5b634b09bc
+		summarizeBy: none
+		sourceColumn: PRODUCT_LENGTH_CM
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PRODUCT_HEIGHT_CM
+		dataType: double
+		lineageTag: 2ce04c7f-edbb-4182-93c8-634f74cdca42
+		summarizeBy: none
+		sourceColumn: PRODUCT_HEIGHT_CM
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PRODUCT_WIDTH_CM
+		dataType: double
+		lineageTag: 46690482-a6e9-4dee-9c39-b98810ef6f58
+		summarizeBy: none
+		sourceColumn: PRODUCT_WIDTH_CM
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition DIM_PRODUCTS = m
+		mode: import
+		source =
+				let
+				    Source = Snowflake.Databases("VHGALJN-NEB29791.snowflakecomputing.com","OLIST_WH",[Implementation="2.0", Role="OLIST_REPORTER"]),
+				    OLIST_Database = Source{[Name="OLIST",Kind="Database"]}[Data],
+				    MARTS_Schema = OLIST_Database{[Name="MARTS",Kind="Schema"]}[Data],
+				    DIM_PRODUCTS_Table = MARTS_Schema{[Name="DIM_PRODUCTS",Kind="Table"]}[Data]
+				in
+				    DIM_PRODUCTS_Table
+
+	annotation PBI_ResultType = Exception
+

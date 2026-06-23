@@ -91,13 +91,17 @@ Wire it all into one DAG with real dependencies. See `DECISIONS.md` ADR-017 + `p
 - `[x]` Retries (`retries=2`) + explicit failure branch (`notify_failure`, `trigger_rule=one_failed`); `schedule=None` (static dump → trigger on demand)
 - `[x]` Ran locally end-to-end & verified: 49 dbt tasks pass (3 known WARN stay warn, 0 ERROR), `notify_failure` skipped on success, MARTS counts match (99,441 / 112,650 / 96,096). Each task pre-flighted in isolation (`airflow tasks test`) first
 
-## Phase 8 — BI Layer (L6)  `[ ]`
+## Phase 8 — BI Layer (L6)  `[~]` in progress
 
-Reads `MARTS`. **Tool decision still open** (see `DECISIONS.md` ADR-011).
+Reads `MARTS`. **Tool decided: Power BI + `.pbip` + `pbi-cli`** (ADR-011, ADR-018).
 
-- `[ ]` Decide BI tool — Power BI vs Evidence.dev
-- `[ ]` Connect to `MARTS`
-- `[ ]` Build the dashboard(s)
+- `[x]` Decide BI tool — **Power BI**, `.pbip` text format, built with `pbi-cli` (ADR-011)
+- `[x]` Snowflake `OLIST_REPORTER` role (read MARTS only) + service user — least privilege proven (denied on RAW). Auth = **password** (untyped user; PBI build lacked key-pair) — role scoping unchanged (ADR-012 carried in)
+- `[x]` Connect Power BI Desktop → `MARTS` (Import mode), loaded 8 mart tables at exact counts
+- `[x]` **Semantic model built as code via pbi-cli**: full star (12 relationships incl. role-playing dates + geography snowflake), **21 measures** in folders; numbers reconcile (Orders 99,441 · Customers 96,096 · Revenue R$15.84M)
+- `[x]` **Page 1 (Sales & Revenue) built as code**: 4 KPI cards + revenue-over-time + revenue-by-category/state + orders-by-payment-type (8 visuals)
+- `[~]` **NEXT SESSION (reporting):** Page 2 (Delivery & Ops), Page 3 (RFM), filter out `(Blank)` categories, theme/formatting, move measures to a dedicated `_Measures` table, capture dashboard figures
+- Tooling: **pbi-cli must be git `master` (3.11.2), not PyPI 1.0.6** (PyPI is frozen/ancient, no report layer); **Power BI Desktop must be current** (writes PBIR schema 2.7.0; the old Mar-2025 build couldn't open it). See ADR-018 + `[[pbi-cli-connection-workaround]]` memory.
 
 ## Phase 9 — Polish & Publish  `[ ]`
 
@@ -110,7 +114,7 @@ Reads `MARTS`. **Tool decision still open** (see `DECISIONS.md` ADR-011).
 
 ## Open decisions (need an owner call — see `DECISIONS.md`)
 
-- `[ ]` **BI tool** — Power BI (recommended) vs Evidence.dev. Needed before Phase 8. (ADR-011)
+- `[x]` **BI tool** — **resolved 2026-06-22:** Power BI + `.pbip` + `pbi-cli` (ADR-011).
 - `[x]` **Q6 — null / orphan handling** — **confirmed 2026-06-17 (Phase 4):** Hybrid; reconciliation mismatches flagged-and-kept, only broken rows quarantined. (ADR-009 / ADR-015)
 
 ## Owner-driven steps (Claude generates + guides, cannot do directly)

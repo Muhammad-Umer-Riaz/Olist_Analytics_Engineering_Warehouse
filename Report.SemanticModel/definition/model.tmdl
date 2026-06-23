@@ -1,0 +1,25 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-FI
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["CUSTOMER_SUMMARY","DIM_CUSTOMERS","DIM_DATES","DIM_GEOGRAPHY","DIM_PRODUCTS","DIM_SELLERS","FCT_ORDER_ITEMS","FCT_ORDERS"]
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_ProTooling = ["MCP-PBIModeling","DevMode"]
+
+ref table CUSTOMER_SUMMARY
+ref table DIM_CUSTOMERS
+ref table DIM_DATES
+ref table DIM_GEOGRAPHY
+ref table DIM_PRODUCTS
+ref table DIM_SELLERS
+ref table FCT_ORDER_ITEMS
+ref table FCT_ORDERS
+
+ref cultureInfo en-US
+

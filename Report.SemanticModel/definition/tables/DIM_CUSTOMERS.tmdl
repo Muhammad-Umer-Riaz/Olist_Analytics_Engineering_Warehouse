@@ -1,0 +1,56 @@
+table DIM_CUSTOMERS
+	lineageTag: cde819e1-8280-4db8-8ae3-6d5a3c4c331b
+
+	column CUSTOMER_ID
+		dataType: string
+		lineageTag: 117dac74-6314-48f5-a1e8-ee4da9bdf1a9
+		summarizeBy: none
+		sourceColumn: CUSTOMER_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column CUSTOMER_UNIQUE_ID
+		dataType: string
+		lineageTag: bab7ca10-e291-44b4-bb4c-b4924da837fd
+		summarizeBy: none
+		sourceColumn: CUSTOMER_UNIQUE_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column CUSTOMER_ZIP_CODE_PREFIX
+		dataType: string
+		lineageTag: 2537af1c-7c65-409c-b43f-20ed658d42eb
+		summarizeBy: none
+		sourceColumn: CUSTOMER_ZIP_CODE_PREFIX
+
+		annotation SummarizationSetBy = Automatic
+
+	column CUSTOMER_CITY
+		dataType: string
+		lineageTag: 9c664ff9-ebfc-430b-af14-44972f8751cf
+		summarizeBy: none
+		sourceColumn: CUSTOMER_CITY
+
+		annotation SummarizationSetBy = Automatic
+
+	column CUSTOMER_STATE
+		dataType: string
+		lineageTag: 6bbfc651-6fc3-4e91-9f77-031792967115
+		summarizeBy: none
+		sourceColumn: CUSTOMER_STATE
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DIM_CUSTOMERS = m
+		mode: import
+		source =
+				let
+				    Source = Snowflake.Databases("VHGALJN-NEB29791.snowflakecomputing.com","OLIST_WH",[Implementation="2.0", Role="OLIST_REPORTER"]),
+				    OLIST_Database = Source{[Name="OLIST",Kind="Database"]}[Data],
+				    MARTS_Schema = OLIST_Database{[Name="MARTS",Kind="Schema"]}[Data],
+				    DIM_CUSTOMERS_Table = MARTS_Schema{[Name="DIM_CUSTOMERS",Kind="Table"]}[Data]
+				in
+				    DIM_CUSTOMERS_Table
+
+	annotation PBI_ResultType = Exception
+

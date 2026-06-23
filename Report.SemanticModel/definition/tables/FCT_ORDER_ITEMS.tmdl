@@ -1,0 +1,152 @@
+table FCT_ORDER_ITEMS
+	lineageTag: d2dbf1cd-337a-4b1f-972a-793bf394f5cc
+
+	measure 'Total Revenue' = SUM(FCT_ORDER_ITEMS[REVENUE_BRL])
+		formatString: #,##0
+		displayFolder: Revenue
+		lineageTag: d52738c4-7a20-4a10-ac86-7c6ee2cae168
+
+	measure 'Total Revenue (USD)' = SUM(FCT_ORDER_ITEMS[REVENUE_USD])
+		formatString: #,##0
+		displayFolder: Revenue
+		lineageTag: 9b5960b0-86e3-498a-912e-9dc1b488530b
+
+	measure 'Total Revenue (EUR)' = SUM(FCT_ORDER_ITEMS[REVENUE_EUR])
+		formatString: #,##0
+		displayFolder: Revenue
+		lineageTag: 56fdd968-11b5-4ef5-8c13-084585f3fa81
+
+	measure 'Total Freight' = SUM(FCT_ORDER_ITEMS[FREIGHT_BRL])
+		formatString: #,##0
+		displayFolder: Revenue
+		lineageTag: 9dd016d5-f63f-4d4a-b4cf-04de770f0c8b
+
+	measure 'Items Sold' = COUNTROWS(FCT_ORDER_ITEMS)
+		formatString: #,##0
+		displayFolder: Revenue
+		lineageTag: 8e1394d0-0893-4a89-86c6-46a23896122b
+
+	column ORDER_ID
+		dataType: string
+		lineageTag: 0a6eca03-5e3b-4d6e-84ae-85bd10418d1e
+		summarizeBy: none
+		sourceColumn: ORDER_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column ORDER_ITEM_ID
+		dataType: double
+		lineageTag: cecbc303-49ad-42f5-88aa-999a55ca62bc
+		summarizeBy: count
+		sourceColumn: ORDER_ITEM_ID
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PRODUCT_ID
+		dataType: string
+		lineageTag: 83f45d72-d9ee-4fe3-8a9e-d2a1fb3a9b35
+		summarizeBy: none
+		sourceColumn: PRODUCT_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column SELLER_ID
+		dataType: string
+		lineageTag: beeb3ad5-fc55-4e10-ba27-cf94951a4a59
+		summarizeBy: none
+		sourceColumn: SELLER_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column CUSTOMER_ID
+		dataType: string
+		lineageTag: 2ae1bd51-e83e-4753-85c5-3b377a126c5b
+		summarizeBy: none
+		sourceColumn: CUSTOMER_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column ORDER_PURCHASE_DATE_KEY
+		dataType: double
+		lineageTag: 3e47ffff-5899-48a0-9d2d-9b5eab8f8f7b
+		summarizeBy: sum
+		sourceColumn: ORDER_PURCHASE_DATE_KEY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SHIPPING_LIMIT_DATE
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a8a63ced-6513-407d-b1f6-6f55b2143f3d
+		summarizeBy: none
+		sourceColumn: SHIPPING_LIMIT_DATE
+
+		annotation SummarizationSetBy = Automatic
+
+	column PRICE_BRL
+		dataType: double
+		lineageTag: 6ee3330d-410c-4e49-ab94-f0c207589056
+		summarizeBy: sum
+		sourceColumn: PRICE_BRL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column FREIGHT_BRL
+		dataType: double
+		lineageTag: 516cf9aa-a384-4b3e-bef1-36771bda24f8
+		summarizeBy: sum
+		sourceColumn: FREIGHT_BRL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column REVENUE_BRL
+		dataType: double
+		lineageTag: 267e819b-b687-4b39-a22e-59c296755453
+		summarizeBy: sum
+		sourceColumn: REVENUE_BRL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column REVENUE_USD
+		dataType: double
+		lineageTag: 703ddb09-efff-43d7-901d-c2a44af8cf96
+		summarizeBy: sum
+		sourceColumn: REVENUE_USD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column REVENUE_EUR
+		dataType: double
+		lineageTag: 2b74426a-f5bb-4e11-9e91-dbe1f255a13e
+		summarizeBy: sum
+		sourceColumn: REVENUE_EUR
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition FCT_ORDER_ITEMS = m
+		mode: import
+		source =
+				let
+				    Source = Snowflake.Databases("VHGALJN-NEB29791.snowflakecomputing.com","OLIST_WH",[Implementation="2.0", Role="OLIST_REPORTER"]),
+				    OLIST_Database = Source{[Name="OLIST",Kind="Database"]}[Data],
+				    MARTS_Schema = OLIST_Database{[Name="MARTS",Kind="Schema"]}[Data],
+				    FCT_ORDER_ITEMS_Table = MARTS_Schema{[Name="FCT_ORDER_ITEMS",Kind="Table"]}[Data]
+				in
+				    FCT_ORDER_ITEMS_Table
+
+	annotation PBI_ResultType = Table
+

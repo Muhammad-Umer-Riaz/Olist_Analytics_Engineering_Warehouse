@@ -1,0 +1,60 @@
+table DIM_GEOGRAPHY
+	lineageTag: 02b34f72-c80c-463d-a406-0ef5f26151b1
+
+	column ZIP_CODE_PREFIX
+		dataType: string
+		lineageTag: 1db4e791-ce7f-4929-832b-568b1aa5ce32
+		summarizeBy: none
+		sourceColumn: ZIP_CODE_PREFIX
+
+		annotation SummarizationSetBy = Automatic
+
+	column CITY
+		dataType: string
+		lineageTag: 751fa1db-fd1d-4b2b-8625-fe1d2529790c
+		summarizeBy: none
+		sourceColumn: CITY
+
+		annotation SummarizationSetBy = Automatic
+
+	column STATE
+		dataType: string
+		lineageTag: a784a27e-ce5a-45bc-8ee3-9a8275cb1add
+		summarizeBy: none
+		sourceColumn: STATE
+
+		annotation SummarizationSetBy = Automatic
+
+	column LATITUDE
+		dataType: double
+		lineageTag: f0f55f5c-848b-4c95-a479-70cda84d3c3a
+		summarizeBy: sum
+		sourceColumn: LATITUDE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column LONGITUDE
+		dataType: double
+		lineageTag: 562b1d1b-6eb6-4cba-b495-3be38178aec2
+		summarizeBy: sum
+		sourceColumn: LONGITUDE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition DIM_GEOGRAPHY = m
+		mode: import
+		source =
+				let
+				    Source = Snowflake.Databases("VHGALJN-NEB29791.snowflakecomputing.com","OLIST_WH",[Implementation="2.0", Role="OLIST_REPORTER"]),
+				    OLIST_Database = Source{[Name="OLIST",Kind="Database"]}[Data],
+				    MARTS_Schema = OLIST_Database{[Name="MARTS",Kind="Schema"]}[Data],
+				    DIM_GEOGRAPHY_Table = MARTS_Schema{[Name="DIM_GEOGRAPHY",Kind="Table"]}[Data]
+				in
+				    DIM_GEOGRAPHY_Table
+
+	annotation PBI_ResultType = Exception
+
