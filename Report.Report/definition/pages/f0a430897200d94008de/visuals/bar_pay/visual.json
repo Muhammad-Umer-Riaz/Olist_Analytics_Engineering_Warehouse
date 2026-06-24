@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
   "name": "bar_pay",
   "position": {
-    "x": 648,
+    "x": 526,
     "y": 454,
     "z": 7,
     "height": 242,
-    "width": 608,
+    "width": 486,
     "tabOrder": 7
   },
   "visual": {
