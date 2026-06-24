@@ -9,6 +9,15 @@
         "page": "1.3.98"
       },
       "type": "SharedResources"
+    },
+    "customTheme": {
+      "name": "Olist_Commerce_Report921167331997544.json",
+      "reportVersionAtImport": {
+        "visual": "2.10.0",
+        "report": "3.4.0",
+        "page": "2.3.1"
+      },
+      "type": "RegisteredResources"
     }
   },
   "objects": {
@@ -48,6 +57,17 @@
           "name": "CY24SU10",
           "path": "BaseThemes/CY24SU10.json",
           "type": "BaseTheme"
+        }
+      ]
+    },
+    {
+      "name": "RegisteredResources",
+      "type": "RegisteredResources",
+      "items": [
+        {
+          "name": "Olist_Commerce_Report921167331997544.json",
+          "path": "Olist_Commerce_Report921167331997544.json",
+          "type": "CustomTheme"
         }
       ]
     }

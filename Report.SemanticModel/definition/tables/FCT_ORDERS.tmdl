@@ -12,7 +12,7 @@ table FCT_ORDERS
 		lineageTag: 5c45e550-6ee5-401d-a528-f2e2e50c35c1
 
 	measure 'Avg Order Value' = DIVIDE([Total Revenue], [Total Orders])
-		formatString: #,##0.00
+		formatString: """R$ ""#,##0"""
 		displayFolder: Orders & Value
 		lineageTag: 6b3cf102-0c31-4e64-978f-bf73c80fe686
 
@@ -60,6 +60,11 @@ table FCT_ORDERS
 		formatString: #,##0
 		displayFolder: Date Roles
 		lineageTag: a2528164-871f-4947-bdff-8f2debf6c6a1
+
+	measure 'Late Rate' = DIVIDE([Late Orders], [Delivered Orders])
+		formatString: 0.0%
+		displayFolder: Delivery & Ops
+		lineageTag: 7c1e9a02-4b3d-4f1a-9c6e-1a2b3c4d5e6f
 
 	column ORDER_ID
 		dataType: string
@@ -330,6 +335,13 @@ table FCT_ORDERS
 		lineageTag: 92ec910a-43e9-44e4-9711-980a80b92318
 		summarizeBy: none
 		sourceColumn: IS_PAYMENT_RECONCILED
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Delivery Days Bucket' = SWITCH(TRUE(), ISBLANK(FCT_ORDERS[DELIVERY_DAYS]), "Not delivered", FCT_ORDERS[DELIVERY_DAYS] <= 3, "00-03 days", FCT_ORDERS[DELIVERY_DAYS] <= 7, "04-07 days", FCT_ORDERS[DELIVERY_DAYS] <= 14, "08-14 days", FCT_ORDERS[DELIVERY_DAYS] <= 30, "15-30 days", "31+ days")
+		dataType: string
+		lineageTag: 8a2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+		summarizeBy: none
 
 		annotation SummarizationSetBy = Automatic
 

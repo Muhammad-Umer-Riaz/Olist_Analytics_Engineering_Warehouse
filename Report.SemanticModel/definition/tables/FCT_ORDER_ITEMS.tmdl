@@ -2,17 +2,17 @@ table FCT_ORDER_ITEMS
 	lineageTag: d2dbf1cd-337a-4b1f-972a-793bf394f5cc
 
 	measure 'Total Revenue' = SUM(FCT_ORDER_ITEMS[REVENUE_BRL])
-		formatString: #,##0
+		formatString: """R$ ""#,##0.0"""
 		displayFolder: Revenue
 		lineageTag: d52738c4-7a20-4a10-ac86-7c6ee2cae168
 
 	measure 'Total Revenue (USD)' = SUM(FCT_ORDER_ITEMS[REVENUE_USD])
-		formatString: #,##0
+		formatString: """$""#,##0.0"""
 		displayFolder: Revenue
 		lineageTag: 9b5960b0-86e3-498a-912e-9dc1b488530b
 
 	measure 'Total Revenue (EUR)' = SUM(FCT_ORDER_ITEMS[REVENUE_EUR])
-		formatString: #,##0
+		formatString: """€ ""#,##0.0"""
 		displayFolder: Revenue
 		lineageTag: 56fdd968-11b5-4ef5-8c13-084585f3fa81
 
