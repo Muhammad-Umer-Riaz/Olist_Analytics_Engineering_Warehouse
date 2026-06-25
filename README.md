@@ -267,6 +267,10 @@ marts**:
   financing, not errors. Genuinely-broken rows (orphan keys, structurally-missing payments) are
   quarantined into an **auditable `rejects` table** with a reason column — never silently dropped.
 
+![dbt project structure](figures/dbt-docs-project-tree.png)
+*The dbt project as catalogued by `dbt docs`: the `olist_raw` sources, the seven reusable macros, the
+three model layers (staging · intermediate · marts), the holiday seed, and the four singular tests.*
+
 ### Testing & Trust — dbt (L4)
 **52 tests: 49 pass, 3 documented warn, 0 error.** Generic tests (unique, not_null, relationships,
 accepted_values) cover every layer; singular tests assert business invariants (no negative money,
@@ -274,6 +278,10 @@ delivered-after-purchase, the two facts reconcile, delivered orders have a deliv
 known Olist source anomalies — 8 orders flagged delivered with no customer-delivery timestamp, and
 a handful of zip codes absent from geolocation — are surfaced at **warn severity** rather than
 hidden or dropped. Trustworthy, auditable data is the project's DNA.
+
+![dbt lineage graph](figures/dbt-lineage-dag.png)
+*The full dbt DAG — `olist_raw` sources (green) flow through staging → intermediate → marts, with the
+singular tests as leaf nodes. The same lineage is what Cosmos renders model-by-model in Airflow.*
 
 ### Orchestration — Airflow (L5)
 One DAG (`olist_elt`) wires the platform together ([ADR-017](./DECISIONS.md)). dbt runs through

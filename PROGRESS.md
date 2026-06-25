@@ -6,7 +6,7 @@ in [`plans/`](./plans) before each phase begins (see `CLAUDE.md`).
 
 **Convention:** `[ ]` = Not started · `[-]` = In progress · `[x]` = Completed · `[~]` = Dropped
 
-_Last updated: 2026-06-22_
+_Last updated: 2026-06-25_
 
 ---
 
@@ -91,7 +91,7 @@ Wire it all into one DAG with real dependencies. See `DECISIONS.md` ADR-017 + `p
 - `[x]` Retries (`retries=2`) + explicit failure branch (`notify_failure`, `trigger_rule=one_failed`); `schedule=None` (static dump → trigger on demand)
 - `[x]` Ran locally end-to-end & verified: 49 dbt tasks pass (3 known WARN stay warn, 0 ERROR), `notify_failure` skipped on success, MARTS counts match (99,441 / 112,650 / 96,096). Each task pre-flighted in isolation (`airflow tasks test`) first
 
-## Phase 8 — BI Layer (L6)  `[~]` in progress
+## Phase 8 — BI Layer (L6)  `[x]`
 
 Reads `MARTS`. **Tool decided: Power BI + `.pbip` + `pbi-cli`** (ADR-011, ADR-018).
 
@@ -100,15 +100,16 @@ Reads `MARTS`. **Tool decided: Power BI + `.pbip` + `pbi-cli`** (ADR-011, ADR-01
 - `[x]` Connect Power BI Desktop → `MARTS` (Import mode), loaded 8 mart tables at exact counts
 - `[x]` **Semantic model built as code via pbi-cli**: full star (12 relationships incl. role-playing dates + geography snowflake), **21 measures** in folders; numbers reconcile (Orders 99,441 · Customers 96,096 · Revenue R$15.84M)
 - `[x]` **Page 1 (Sales & Revenue) built as code**: 4 KPI cards + revenue-over-time + revenue-by-category/state + orders-by-payment-type (8 visuals)
-- `[~]` **NEXT SESSION (reporting):** Page 2 (Delivery & Ops), Page 3 (RFM), filter out `(Blank)` categories, theme/formatting, move measures to a dedicated `_Measures` table, capture dashboard figures
+- `[x]` **Reporting complete:** Page 2 (Delivery & Ops), Page 3 (Customer Segmentation / RFM), and Home cover built; category/payment labels cleaned (Power Query `Text.Proper`), `(Blank)`/`not_defined` excluded, trend lines cut to complete months (≤ 2018-08-31), theme/formatting applied, 4 dashboard figures captured. _(Measures kept on host tables — dedicated `_Measures` table deferred, cosmetic only.)_
 - Tooling: **pbi-cli must be git `master` (3.11.2), not PyPI 1.0.6** (PyPI is frozen/ancient, no report layer); **Power BI Desktop must be current** (writes PBIR schema 2.7.0; the old Mar-2025 build couldn't open it). See ADR-018 + `[[pbi-cli-connection-workaround]]` memory.
 
-## Phase 9 — Polish & Publish  `[ ]`
+## Phase 9 — Polish & Publish  `[x]`
 
-- `[ ]` Write the full `README.md` (architecture, setup, honest caveats — incl. static-data caveat on incrementals)
-- `[ ]` Capture figures: ERD, dbt lineage DAG, dashboard screenshots → `figures/`
-- `[ ]` Final review of `DECISIONS.md`
-- `[ ]` Push to GitHub (only on explicit owner instruction)
+- `[x]` Wrote the full `README.md` (architecture + Mermaid diagram, modelling, testing, orchestration, BI-as-code, honest caveats incl. static-data + 2-of-4-cursor)
+- `[x]` Figures → `figures/`: dbt lineage DAG + project tree, Airflow DAG + Cosmos lineage, semantic-model relationships (serves as the model diagram), 4 dashboard pages
+- `[x]` Reviewed `DECISIONS.md` (18 ADRs)
+- `[x]` Folder cleanup: renamed PBI project `Report.*` → `OlistAnalytics.*`, dropped stale `Report.pbix` + unused reporter key-pair, untracked `CLAUDE.md`
+- `[x]` **Pushed to GitHub (2026-06-25)** — public repo `Olist_Analytics_Engineering_Warehouse`
 
 ---
 
