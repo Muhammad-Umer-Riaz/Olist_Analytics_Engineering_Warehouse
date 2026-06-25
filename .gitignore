@@ -70,9 +70,10 @@ webserver_config.py
 **/.pbi/
 
 # ─────────────────────────────────────────────────────────────
-# Local-only docs (AI working agreement + session handoff — not part of the
-# published showcase)
+# Local-only docs (AI working agreement, kickoff spec, session handoff — not part
+# of the published showcase)
 CLAUDE.md
+CONTEXT.md
 .handoff.md
 
 # OS / IDE

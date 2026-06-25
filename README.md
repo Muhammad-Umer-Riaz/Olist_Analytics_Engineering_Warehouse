@@ -1,5 +1,5 @@
 # Olist Analytics Engineering Warehouse
-### A trustworthy ELT warehouse on Brazilian e-commerce data · dlt → Snowflake → dbt Core → Airflow → Power BI
+### An ELT warehouse on Brazilian e-commerce data · dlt → Snowflake → dbt Core → Airflow → Power BI
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Muhammad%20Umer%20Riaz-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/muhammad-umer-riaz/)
 [![GitHub](https://img.shields.io/badge/GitHub-Muhammad--Umer--Riaz-181717?style=flat&logo=github)](https://github.com/Muhammad-Umer-Riaz)
@@ -133,48 +133,18 @@ DAG with model-level lineage — but never loads data itself; that separation is
 
 ---
 
-## Business Value
+## Layer Overview
 
-Engineering is the focus, but the warehouse is built to answer real sales-and-operations
-questions. A few, paired with what the data shows:
-
-- **Where does revenue concentrate?** Heavily in **São Paulo** (R$ 5.9M — ~37% of all revenue,
-  ahead of Rio de Janeiro at R$ 2.1M), and across a long tail of categories led by **Health &
-  Beauty, Watches & Gifts, and Bed/Bath/Table** (~R$ 1.2–1.4M each).
-- **Is Olist reliable on delivery?** Yes — **92.1% on-time** at an average of **12.5 days**.
-- **Does late delivery actually hurt reviews?** Sharply. Average review score falls monotonically
-  with delivery time: **4.46** for orders delivered in 0–3 days, down to **2.20** at 31+ days and
-  **1.75** for never-delivered orders — delivery performance is the dominant driver of satisfaction.
-- **Why is repeat purchase so rare?** The **3.1% repeat rate** is the headline finding: Olist is a
-  ~97% one-time-buyer marketplace. This isn't a data bug — it's a real property of the platform, and
-  it directly shaped the RFM design (see *Limitations*).
-
----
-
-## Dashboard
-
-A four-page Power BI report, authored entirely in the `.pbip` text format (TMDL model + PBIR
-report JSON) and version-controlled in this repo.
-
-### Home
-![Home](figures/dashboard-home.png)
-*Cover page: the ELT pipeline and the three analytical sections at a glance.*
-
-### Sales & Revenue
-![Sales](figures/dashboard-sales.png)
-*R$ 15.8M revenue across 99,441 orders. Monthly revenue trend (complete months), top categories
-and states by revenue, and orders by payment type (credit card dominates at ~75%). Right-rail
-slicers cross-filter the page.*
-
-### Delivery & Operations
-![Delivery & Ops](figures/dashboard-delivery-ops.png)
-*92.1% on-time delivery. On-time rate over time, order volume and review score by delivery-time
-bucket, and a filled choropleth of on-time rate by Brazilian state.*
-
-### Customer Segmentation
-![Customer Segmentation](figures/dashboard-customer-segmentation.png)
-*RFM segmentation across 96,096 customers. Segment distribution, average CLV and recency by
-segment, and a monetary treemap. Champions lead on CLV (R$ 849).*
+| Layer | Tool | Objects | Purpose |
+|---|---|---|---|
+| L1 Load | **dlt** | 9 Olist tables + FX → `RAW` | Extract-and-load, 1:1 landing, hybrid full-refresh / merge |
+| L2 Warehouse | **Snowflake** | `RAW`·`STAGING`·`INTERMEDIATE`·`MARTS` | Least-privilege RBAC, two scoped service users |
+| L3 Staging | **dbt** | 10 `stg_*` views | Cast, rename, one hard cleaning problem each |
+| L3 Intermediate | **dbt** | business-logic views + macros | Grain collapses, FX gap-fill, reconciliation, rejects |
+| L3 Marts | **dbt** | 2 facts · 5 dims · summary (tables) | The star schema |
+| L4 Test & Docs | **dbt** | 52 tests + dbt docs | Generic, singular, and conditional tests; lineage |
+| L5 Orchestrate | **Airflow** | 1 DAG, 52 task nodes | dlt load → Cosmos dbt run/test → docs, with a failure branch |
+| L6 BI | **Power BI (.pbip)** | 21 measures · 4 pages | Reads `MARTS` via a read-only reporter role |
 
 ---
 
@@ -211,22 +181,7 @@ Three modelling decisions are worth calling out:
 
 ---
 
-## Layer Overview
-
-| Layer | Tool | Objects | Purpose |
-|---|---|---|---|
-| L1 Load | **dlt** | 9 Olist tables + FX → `RAW` | Extract-and-load, 1:1 landing, hybrid full-refresh / merge |
-| L2 Warehouse | **Snowflake** | `RAW`·`STAGING`·`INTERMEDIATE`·`MARTS` | Least-privilege RBAC, two scoped service users |
-| L3 Staging | **dbt** | 10 `stg_*` views | Cast, rename, one hard cleaning problem each |
-| L3 Intermediate | **dbt** | business-logic views + macros | Grain collapses, FX gap-fill, reconciliation, rejects |
-| L3 Marts | **dbt** | 2 facts · 5 dims · summary (tables) | The star schema |
-| L4 Test & Docs | **dbt** | 52 tests + dbt docs | Generic, singular, and conditional tests; lineage |
-| L5 Orchestrate | **Airflow** | 1 DAG, 52 task nodes | dlt load → Cosmos dbt run/test → docs, with a failure branch |
-| L6 BI | **Power BI (.pbip)** | 21 measures · 4 pages | Reads `MARTS` via a read-only reporter role |
-
----
-
-## Engineering Deep-Dives
+## How It's Built, Layer by Layer
 
 ### Load — dlt (L1)
 dlt performs the extract-and-load; **Airflow never loads** ([ADR-003](./DECISIONS.md)). The strategy
@@ -250,6 +205,11 @@ is created by the role that should own it, and a resource monitor caps the wareh
 credits/month. The reporting connection adds a third read-only role (`OLIST_REPORTER`) scoped to
 `MARTS` only.
 
+<p align="center"><img src="figures/dbt-docs-database-tree.png" alt="Snowflake schemas"></p>
+
+*The four schemas in the `OLIST` database, as catalogued by `dbt docs`: **RAW** (1:1 landing),
+**STAGING**, **INTERMEDIATE**, and **MARTS** — every object dbt builds, routed to its target schema.*
+
 ### Transformation — dbt Core (L3)
 The transformation layer is where the real work lives, structured as **staging → intermediate →
 marts**:
@@ -262,16 +222,21 @@ marts**:
   `order_item_revenue`, `brl_to`), payment-installment collapse to one row per order, multi-review
   dedup, the deferred PT→EN category join, and an **FX gap-fill** (LOCF forward-fill + leading
   back-fill, since the FX API has no weekend/holiday rates).
-- **Trust** ([ADR-009](./DECISIONS.md)): payment reconciliation is **3-state** (`TRUE`/`FALSE`/`NULL`
-  when not assessable) — discrepancies are *flagged and kept* because most are legitimate credit-card
-  financing, not errors. Genuinely-broken rows (orphan keys, structurally-missing payments) are
-  quarantined into an **auditable `rejects` table** with a reason column — never silently dropped.
+- **Marts** ([ADR-016](./DECISIONS.md)): the star schema, materialised as tables — two fact grains,
+  five conformed dimensions, and the person-grain `customer_summary`.
 
-![dbt project structure](figures/dbt-docs-project-tree.png)
+Data quality is handled inside the intermediate layer rather than bolted on at the end
+([ADR-009](./DECISIONS.md)): payment reconciliation is **3-state** (`TRUE`/`FALSE`/`NULL` when not
+assessable) — discrepancies are *flagged and kept* (most are legitimate credit-card financing, not
+errors), while genuinely-broken rows (orphan keys, structurally-missing payments) are quarantined
+into an **auditable `rejects` table** with a reason column — never silently dropped.
+
+<p align="center"><img src="figures/dbt-docs-project-tree.png" alt="dbt project structure"></p>
+
 *The dbt project as catalogued by `dbt docs`: the `olist_raw` sources, the seven reusable macros, the
 three model layers (staging · intermediate · marts), the holiday seed, and the four singular tests.*
 
-### Testing & Trust — dbt (L4)
+### Testing & Data Quality — dbt (L4)
 **52 tests: 49 pass, 3 documented warn, 0 error.** Generic tests (unique, not_null, relationships,
 accepted_values) cover every layer; singular tests assert business invariants (no negative money,
 delivered-after-purchase, the two facts reconcile, delivered orders have a delivery date). The
@@ -280,6 +245,7 @@ a handful of zip codes absent from geolocation — are surfaced at **warn severi
 hidden or dropped. Trustworthy, auditable data is the project's DNA.
 
 ![dbt lineage graph](figures/dbt-lineage-dag.png)
+
 *The full dbt DAG — `olist_raw` sources (green) flow through staging → intermediate → marts, with the
 singular tests as leaf nodes. The same lineage is what Cosmos renders model-by-model in Airflow.*
 
@@ -293,9 +259,11 @@ orchestrator. `schedule=None` (the source is a static dump — see *Limitations*
 explicit `notify_failure` branch on `one_failed`.
 
 ![Airflow DAG](figures/airflow-dag-graph.png)
+
 *The full DAG: `dlt_load_olist` → a Cosmos dbt task group (model-level run + test) → `dbt_docs_generate`, with a failure branch.*
 
 ![Cosmos model-level lineage](figures/airflow-dbt-cosmos-lineage.png)
+
 *Cosmos expands dbt into per-model run/test tasks — staging → intermediate → marts lineage, visible in Airflow.*
 
 ### BI as Code — Power BI `.pbip` (L6)
@@ -309,6 +277,55 @@ The model and report were authored **as code** with [`pbi-cli`](https://github.c
 — a CLI that drives Power BI's Tabular Object Model and edits the PBIR report JSON directly — driven
 by Claude Code, so measures, relationships, and visuals were written and reviewed as text diffs
 rather than clicked together in the Desktop GUI.
+
+---
+
+## Dashboard
+
+A four-page Power BI report, authored entirely in the `.pbip` text format (TMDL model + PBIR
+report JSON) and version-controlled in this repo.
+
+### Home
+![Home](figures/dashboard-home.png)
+
+*Cover page: the ELT pipeline and the three analytical sections at a glance.*
+
+### Sales & Revenue
+![Sales](figures/dashboard-sales.png)
+
+*R$ 15.8M revenue across 99,441 orders. Monthly revenue trend (complete months), top categories
+and states by revenue, and orders by payment type (credit card dominates at ~75%). Right-rail
+slicers cross-filter the page.*
+
+### Delivery & Operations
+![Delivery & Ops](figures/dashboard-delivery-ops.png)
+
+*92.1% on-time delivery. On-time rate over time, order volume and review score by delivery-time
+bucket, and a filled choropleth of on-time rate by Brazilian state.*
+
+### Customer Segmentation
+![Customer Segmentation](figures/dashboard-customer-segmentation.png)
+
+*RFM segmentation across 96,096 customers. Segment distribution, average CLV and recency by
+segment, and a monetary treemap. Champions lead on CLV (R$ 849).*
+
+---
+
+## Business Value
+
+Engineering is the focus, but the warehouse is built to answer real sales-and-operations
+questions. A few, paired with what the data shows:
+
+- **Where does revenue concentrate?** Heavily in **São Paulo** (R$ 5.9M — ~37% of all revenue,
+  ahead of Rio de Janeiro at R$ 2.1M), and across a long tail of categories led by **Health &
+  Beauty, Watches & Gifts, and Bed/Bath/Table** (~R$ 1.2–1.4M each).
+- **Is Olist reliable on delivery?** Yes — **92.1% on-time** at an average of **12.5 days**.
+- **Does late delivery actually hurt reviews?** Sharply. Average review score falls monotonically
+  with delivery time: **4.46** for orders delivered in 0–3 days, down to **2.20** at 31+ days and
+  **1.75** for never-delivered orders — delivery performance is the dominant driver of satisfaction.
+- **Why is repeat purchase so rare?** The **3.1% repeat rate** is the headline finding: Olist is a
+  ~97% one-time-buyer marketplace. This isn't a data bug — it's a real property of the platform, and
+  it directly shaped the RFM design (see *Limitations*).
 
 ---
 
@@ -336,7 +353,6 @@ rather than clicked together in the Desktop GUI.
 ├── OlistAnalytics.Report        # PBIR report (4 pages, as code)
 ├── figures/                     # architecture, dbt lineage, Airflow, dashboard screenshots
 ├── plans/                       # per-phase build plans
-├── CONTEXT.md                   # full project spec + locked decisions
 ├── DECISIONS.md                 # 18 ADRs (rationale + rejected alternatives)
 └── PROGRESS.md                  # phase-by-phase build log
 ```
@@ -345,7 +361,7 @@ rather than clicked together in the Desktop GUI.
 
 ## Limitations
 
-These are real constraints, stated honestly:
+These are real constraints:
 
 - **Static historical dump.** The Olist data is a fixed 2016–2018 extract. The incremental-load
   setup demonstrates the *mechanism* (cursor extraction, idempotent merge, two-pass seeding), not a
@@ -394,7 +410,6 @@ per-phase [`plans/`](./plans)) are the durable record.
 
 ## Project Documentation
 
-- [`CONTEXT.md`](./CONTEXT.md) — the full project spec and locked decisions
 - [`DECISIONS.md`](./DECISIONS.md) — 18 ADRs, each with rationale and rejected alternatives
 - [`PROGRESS.md`](./PROGRESS.md) — the phase-by-phase build log with verification results
 - [`plans/`](./plans) — the per-phase implementation plans
@@ -404,7 +419,7 @@ per-phase [`plans/`](./plans)) are the durable record.
 ## Author
 
 **Muhammad Umer Riaz**
-Analytics Engineering · Data Modelling 
+Analytics Engineering · Data Modelling
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Muhammad%20Umer%20Riaz-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/muhammad-umer-riaz/)
 [![GitHub](https://img.shields.io/badge/GitHub-Muhammad--Umer--Riaz-181717?style=flat&logo=github)](https://github.com/Muhammad-Umer-Riaz)
