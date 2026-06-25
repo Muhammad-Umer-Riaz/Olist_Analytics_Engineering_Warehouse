@@ -58,7 +58,7 @@
                 "horizontalTextAlignment": "left",
                 "textRuns": [
                   {
-                    "value": "Recency \u00b7 Frequency \u00b7 Monetary",
+                    "value": "Recency · Frequency · Monetary",
                     "textStyle": {
                       "fontSize": "10pt",
                       "color": "#9FB0C7"

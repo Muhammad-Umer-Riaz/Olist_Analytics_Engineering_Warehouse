@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "card_aov",
+  "position": {
+    "x": 777,
+    "y": 88,
+    "z": 3,
+    "height": 92,
+    "width": 235,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CUSTOMER_SUMMARY"
+                    }
+                  },
+                  "Property": "Avg Customer AOV"
+                }
+              },
+              "queryRef": "CUSTOMER_SUMMARY.Avg Customer AOV",
+              "nativeQueryRef": "Avg Customer AOV"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

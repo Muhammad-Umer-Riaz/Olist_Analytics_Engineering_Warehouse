@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "bg_canvas",
   "position": {
     "x": 0,
@@ -17,13 +17,12 @@
           "properties": {
             "paragraphs": [
               {
-                "horizontalTextAlignment": "left",
                 "textRuns": [
                   {
                     "value": " ",
                     "textStyle": {
                       "fontSize": "10pt",
-                      "color": "#FFFFFF"
+                      "color": "#ffffff"
                     }
                   }
                 ]

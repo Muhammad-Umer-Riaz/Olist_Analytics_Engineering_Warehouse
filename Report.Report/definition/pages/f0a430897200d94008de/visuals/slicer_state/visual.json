@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "slicer_state",
   "position": {
     "x": 1036,
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "DIM_CUSTOMERS.CUSTOMER_STATE",
-              "nativeQueryRef": "CUSTOMER_STATE"
+              "nativeQueryRef": "CUSTOMER_STATE",
+              "active": true
             }
           ]
         }

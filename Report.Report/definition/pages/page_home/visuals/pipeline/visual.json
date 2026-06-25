@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "pipeline",
   "position": {
     "x": 240,
@@ -17,17 +17,17 @@
           "properties": {
             "paragraphs": [
               {
-                "horizontalTextAlignment": "center",
                 "textRuns": [
                   {
-                    "value": "dlt  \u2192  Snowflake  \u2192  dbt Core  \u2192  Airflow  \u2192  Power BI",
+                    "value": "dlt  →  Snowflake  →  dbt Core  →  Airflow  →  Power BI",
                     "textStyle": {
+                      "fontFamily": "Consolas",
                       "fontSize": "13pt",
-                      "color": "#8AA9CF",
-                      "fontFamily": "Consolas"
+                      "color": "#8aa9cf"
                     }
                   }
-                ]
+                ],
+                "horizontalTextAlignment": "center"
               }
             ]
           }

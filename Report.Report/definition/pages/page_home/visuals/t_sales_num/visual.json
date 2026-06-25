@@ -1,12 +1,12 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "t_sales_num",
   "position": {
-    "x": 374,
-    "y": 508,
+    "x": 373.99659641314304,
+    "y": 507.91150674172007,
     "z": 3,
-    "height": 20,
-    "width": 44,
+    "height": 30.1610158397696,
+    "width": 43.431862809268225,
     "tabOrder": 3
   },
   "visual": {
@@ -17,7 +17,6 @@
           "properties": {
             "paragraphs": [
               {
-                "horizontalTextAlignment": "right",
                 "textRuns": [
                   {
                     "value": "01",
@@ -27,7 +26,8 @@
                       "fontWeight": "bold"
                     }
                   }
-                ]
+                ],
+                "horizontalTextAlignment": "right"
               }
             ]
           }

@@ -7,7 +7,7 @@ table CUSTOMER_SUMMARY
 		lineageTag: e0d56a73-3374-40d5-883a-366344665662
 
 	measure 'Avg CLV' = AVERAGE(CUSTOMER_SUMMARY[CLV_HISTORICAL])
-		formatString: #,##0.00
+		formatString: """R$ ""#,##0"""
 		displayFolder: Customers (RFM)
 		lineageTag: f56c9c9f-80f7-4b91-8b4f-9ddaf61b7b49
 
@@ -30,6 +30,30 @@ table CUSTOMER_SUMMARY
 		formatString: """R$ ""#,##0"""
 		displayFolder: Customers (RFM)
 		lineageTag: 2c3d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f
+
+	measure 'Avg Recency (Days)' = AVERAGE(CUSTOMER_SUMMARY[RECENCY_DAYS])
+		formatString: #,##0
+		displayFolder: Customers (RFM)
+		lineageTag: 3d4e5f6a-7b8c-9d0e-1f2a-3b4c5d6e7f80
+
+	measure 'Avg Frequency' = AVERAGE(CUSTOMER_SUMMARY[FREQUENCY])
+		formatString: 0.0
+		displayFolder: Customers (RFM)
+		lineageTag: 4e5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8091
+
+	measure 'Avg Monetary' = AVERAGE(CUSTOMER_SUMMARY[MONETARY])
+		formatString: """R$ ""#,##0"""
+		displayFolder: Customers (RFM)
+		lineageTag: 5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8091a2
+
+	measure 'Total Monetary' = SUM(CUSTOMER_SUMMARY[MONETARY])
+		formatString: """R$ ""#,##0"""
+		displayFolder: Customers (RFM)
+		lineageTag: 6a7b8c9d-0e1f-2a3b-4c5d-6e7f8091a2b3
+
+	measure 'CLV Color' = IF(RANKX(ALLSELECTED(CUSTOMER_SUMMARY[RFM_SEGMENT]), [Avg CLV], , DESC) = 1, "#F2A93B", "#2E73B8")
+		displayFolder: Formatting
+		lineageTag: 7b8c9d0e-1f2a-3b4c-5d6e-7f8091a2b3c5
 
 	column CUSTOMER_UNIQUE_ID
 		dataType: string

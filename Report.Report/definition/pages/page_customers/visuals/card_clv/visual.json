@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "card_clv",
+  "position": {
+    "x": 526,
+    "y": 88,
+    "z": 2,
+    "height": 92,
+    "width": 235,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CUSTOMER_SUMMARY"
+                    }
+                  },
+                  "Property": "Avg CLV"
+                }
+              },
+              "queryRef": "CUSTOMER_SUMMARY.Avg CLV",
+              "nativeQueryRef": "Avg CLV"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

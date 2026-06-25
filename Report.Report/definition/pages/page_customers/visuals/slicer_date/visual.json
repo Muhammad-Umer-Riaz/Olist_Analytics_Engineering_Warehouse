@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "slicer_date",
   "position": {
     "x": 900,
@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "DIM_DATES.DATE_DAY",
-              "nativeQueryRef": "DATE_DAY"
+              "nativeQueryRef": "DATE_DAY",
+              "active": true
             }
           ]
         }
@@ -58,13 +59,6 @@
                       "Value": "'#13294B'"
                     }
                   }
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "10D"
                 }
               }
             }

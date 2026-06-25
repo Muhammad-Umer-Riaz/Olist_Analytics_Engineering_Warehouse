@@ -1,0 +1,72 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "treemap_monetary",
+  "position": {
+    "x": 24,
+    "y": 454,
+    "z": 6,
+    "height": 242,
+    "width": 486,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "treemap",
+    "query": {
+      "queryState": {
+        "Group": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CUSTOMER_SUMMARY"
+                    }
+                  },
+                  "Property": "RFM_SEGMENT"
+                }
+              },
+              "queryRef": "CUSTOMER_SUMMARY.RFM_SEGMENT",
+              "nativeQueryRef": "RFM_SEGMENT",
+              "active": true
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CUSTOMER_SUMMARY"
+                    }
+                  },
+                  "Property": "Total Monetary"
+                }
+              },
+              "queryRef": "CUSTOMER_SUMMARY.Total Monetary",
+              "nativeQueryRef": "Total Monetary"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Monetary value by segment'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

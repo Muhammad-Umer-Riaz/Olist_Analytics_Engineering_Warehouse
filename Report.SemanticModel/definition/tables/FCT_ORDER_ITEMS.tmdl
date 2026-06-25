@@ -26,6 +26,14 @@ table FCT_ORDER_ITEMS
 		displayFolder: Revenue
 		lineageTag: 8e1394d0-0893-4a89-86c6-46a23896122b
 
+	measure 'Category Color' = IF(RANKX(ALLSELECTED(DIM_PRODUCTS[PRODUCT_CATEGORY_NAME_ENGLISH]), [Total Revenue], , DESC) = 1, "#F2A93B", "#2E73B8")
+		displayFolder: Formatting
+		lineageTag: 8f9a0b1c-2d3e-4f50-6172-8394a5b6c7d8
+
+	measure 'State Color' = IF(RANKX(ALLSELECTED(DIM_CUSTOMERS[CUSTOMER_STATE]), [Total Revenue], , DESC) = 1, "#F2A93B", "#2E73B8")
+		displayFolder: Formatting
+		lineageTag: 9a0b1c2d-3e4f-5061-7283-94a5b6c7d8e9
+
 	column ORDER_ID
 		dataType: string
 		lineageTag: 0a6eca03-5e3b-4d6e-84ae-85bd10418d1e

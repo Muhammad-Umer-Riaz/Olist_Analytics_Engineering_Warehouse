@@ -36,10 +36,29 @@ table DIM_CUSTOMERS
 	column CUSTOMER_STATE
 		dataType: string
 		lineageTag: 6bbfc651-6fc3-4e91-9f77-031792967115
+		dataCategory: StateOrProvince
 		summarizeBy: none
 		sourceColumn: CUSTOMER_STATE
 
 		annotation SummarizationSetBy = Automatic
+
+	column 'State Name' = SWITCH(DIM_CUSTOMERS[CUSTOMER_STATE], "AC", "Acre", "AL", "Alagoas", "AP", "Amapá", "AM", "Amazonas", "BA", "Bahia", "CE", "Ceará", "DF", "Distrito Federal", "ES", "Espírito Santo", "GO", "Goiás", "MA", "Maranhão", "MT", "Mato Grosso", "MS", "Mato Grosso do Sul", "MG", "Minas Gerais", "PA", "Pará", "PB", "Paraíba", "PR", "Paraná", "PE", "Pernambuco", "PI", "Piauí", "RJ", "Rio de Janeiro", "RN", "Rio Grande do Norte", "RS", "Rio Grande do Sul", "RO", "Rondônia", "RR", "Roraima", "SC", "Santa Catarina", "SP", "São Paulo", "SE", "Sergipe", "TO", "Tocantins", DIM_CUSTOMERS[CUSTOMER_STATE])
+		dataType: string
+		lineageTag: 7b8c9d0e-1f2a-3b4c-5d6e-7f8091a2b3c4
+		dataCategory: StateOrProvince
+		summarizeBy: none
+
+	column 'State Lat' = SWITCH(DIM_CUSTOMERS[CUSTOMER_STATE], "AC", -9.0, "AL", -9.57, "AP", 1.41, "AM", -3.47, "BA", -12.96, "CE", -5.20, "DF", -15.83, "ES", -19.19, "GO", -15.98, "MA", -5.42, "MT", -12.64, "MS", -20.51, "MG", -18.10, "PA", -3.79, "PB", -7.28, "PR", -24.89, "PE", -8.38, "PI", -6.60, "RJ", -22.25, "RN", -5.81, "RS", -30.17, "RO", -10.83, "RR", 1.99, "SC", -27.45, "SP", -22.19, "SE", -10.57, "TO", -10.17)
+		dataType: double
+		lineageTag: 8c9d0e1f-2a3b-4c5d-6e7f-8091a2b3c4d5
+		dataCategory: Latitude
+		summarizeBy: average
+
+	column 'State Long' = SWITCH(DIM_CUSTOMERS[CUSTOMER_STATE], "AC", -70.0, "AL", -36.78, "AP", -51.77, "AM", -65.10, "BA", -41.71, "CE", -39.53, "DF", -47.86, "ES", -40.34, "GO", -49.86, "MA", -45.44, "MT", -55.42, "MS", -54.54, "MG", -44.38, "PA", -52.48, "PB", -36.72, "PR", -51.55, "PE", -37.86, "PI", -42.28, "RJ", -42.66, "RN", -36.59, "RS", -53.50, "RO", -63.34, "RR", -61.33, "SC", -50.95, "SP", -48.79, "SE", -37.45, "TO", -48.30)
+		dataType: double
+		lineageTag: 9d0e1f2a-3b4c-5d6e-7f80-91a2b3c4d5e6
+		dataCategory: Longitude
+		summarizeBy: average
 
 	partition DIM_CUSTOMERS = m
 		mode: import

@@ -10,7 +10,7 @@
     "tabOrder": 7
   },
   "visual": {
-    "visualType": "barChart",
+    "visualType": "donutChart",
     "query": {
       "queryState": {
         "Category": {
@@ -50,6 +50,24 @@
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "FCT_ORDERS"
+                  }
+                },
+                "Property": "Total Orders"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
       }
     },
     "drillFilterOtherVisuals": true,
@@ -61,21 +79,6 @@
               "expr": {
                 "Literal": {
                   "Value": "'Orders by payment type'"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    "objects": {
-      "labels": [
-        {
-          "properties": {
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
                 }
               }
             }
