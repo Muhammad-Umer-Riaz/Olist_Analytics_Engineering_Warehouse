@@ -1,0 +1,199 @@
+table CUSTOMER_SUMMARY
+	lineageTag: a1e83b56-858e-42c3-b1b1-0ea55b565dd1
+
+	measure 'Total Customers' = COUNTROWS(CUSTOMER_SUMMARY)
+		formatString: #,##0
+		displayFolder: Customers (RFM)
+		lineageTag: e0d56a73-3374-40d5-883a-366344665662
+
+	measure 'Avg CLV' = AVERAGE(CUSTOMER_SUMMARY[CLV_HISTORICAL])
+		formatString: """R$ ""#,##0"""
+		displayFolder: Customers (RFM)
+		lineageTag: f56c9c9f-80f7-4b91-8b4f-9ddaf61b7b49
+
+	measure 'Repeat Customers' = CALCULATE([Total Customers], CUSTOMER_SUMMARY[FREQUENCY] > 1)
+		formatString: #,##0
+		displayFolder: Customers (RFM)
+		lineageTag: f4b9efb1-e202-41d9-9a53-277dc656dbd7
+
+	measure 'Repeat Rate' = DIVIDE([Repeat Customers], [Total Customers])
+		formatString: 0.0%
+		displayFolder: Customers (RFM)
+		lineageTag: 05dfad29-6c15-467f-ab4f-875240674ba0
+
+	measure 'One-Time Customers' = [Total Customers] - [Repeat Customers]
+		formatString: #,##0
+		displayFolder: Customers (RFM)
+		lineageTag: 1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e
+
+	measure 'Avg Customer AOV' = AVERAGE(CUSTOMER_SUMMARY[AOV])
+		formatString: """R$ ""#,##0"""
+		displayFolder: Customers (RFM)
+		lineageTag: 2c3d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f
+
+	measure 'Avg Recency (Days)' = AVERAGE(CUSTOMER_SUMMARY[RECENCY_DAYS])
+		formatString: #,##0
+		displayFolder: Customers (RFM)
+		lineageTag: 3d4e5f6a-7b8c-9d0e-1f2a-3b4c5d6e7f80
+
+	measure 'Avg Frequency' = AVERAGE(CUSTOMER_SUMMARY[FREQUENCY])
+		formatString: 0.0
+		displayFolder: Customers (RFM)
+		lineageTag: 4e5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8091
+
+	measure 'Avg Monetary' = AVERAGE(CUSTOMER_SUMMARY[MONETARY])
+		formatString: """R$ ""#,##0"""
+		displayFolder: Customers (RFM)
+		lineageTag: 5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8091a2
+
+	measure 'Total Monetary' = SUM(CUSTOMER_SUMMARY[MONETARY])
+		formatString: """R$ ""#,##0"""
+		displayFolder: Customers (RFM)
+		lineageTag: 6a7b8c9d-0e1f-2a3b-4c5d-6e7f8091a2b3
+
+	measure 'CLV Color' = IF(RANKX(ALLSELECTED(CUSTOMER_SUMMARY[SEGMENT]), [Avg CLV], , DESC) = 1, "#F2A93B", "#2E73B8")
+		displayFolder: Formatting
+		lineageTag: 7b8c9d0e-1f2a-3b4c-5d6e-7f8091a2b3c5
+
+	column CUSTOMER_UNIQUE_ID
+		dataType: string
+		lineageTag: 69290fb0-baa3-4e55-bb25-5affcb42fe6d
+		summarizeBy: none
+		sourceColumn: CUSTOMER_UNIQUE_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column FREQUENCY
+		dataType: double
+		lineageTag: b8430513-7ace-474e-8a24-de548dc3e5c3
+		summarizeBy: sum
+		sourceColumn: FREQUENCY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column MONETARY
+		dataType: double
+		lineageTag: 122bb7e8-dac9-478f-901e-2d53d91fce5c
+		summarizeBy: sum
+		sourceColumn: MONETARY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column AOV
+		dataType: double
+		lineageTag: d8d23457-dcab-4714-8e67-51abdc7ebbcb
+		summarizeBy: sum
+		sourceColumn: AOV
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column RECENCY_DAYS
+		dataType: double
+		lineageTag: 2a724be0-56b6-41f0-9854-b155cacb9acb
+		summarizeBy: sum
+		sourceColumn: RECENCY_DAYS
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column FIRST_ORDER_DATE
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 4f2c91a9-6f3a-461d-94d7-4ae8b78ef680
+		summarizeBy: none
+		sourceColumn: FIRST_ORDER_DATE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column LAST_ORDER_DATE
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: f1719005-7437-4ce5-8700-fed208a90bf8
+		summarizeBy: none
+		sourceColumn: LAST_ORDER_DATE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column TENURE_DAYS
+		dataType: double
+		lineageTag: fa9cb767-71f5-4946-910d-6038728de249
+		summarizeBy: sum
+		sourceColumn: TENURE_DAYS
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column R_SCORE
+		dataType: double
+		lineageTag: cb88b31f-086f-4f2b-a3d0-810d724ea203
+		summarizeBy: sum
+		sourceColumn: R_SCORE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column F_SCORE
+		dataType: double
+		lineageTag: 901ce076-2724-434f-b507-b9b3728aa767
+		summarizeBy: sum
+		sourceColumn: F_SCORE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column M_SCORE
+		dataType: double
+		lineageTag: b5860acf-2bd8-4322-87ed-f796c2ccf154
+		summarizeBy: sum
+		sourceColumn: M_SCORE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column SEGMENT
+		dataType: string
+		lineageTag: 5a7a5bc1-65f8-467d-a7d4-5f70106ccd3f
+		summarizeBy: none
+		sourceColumn: SEGMENT
+
+		annotation SummarizationSetBy = Automatic
+
+	column CLV_HISTORICAL
+		dataType: double
+		lineageTag: c697037e-9c18-47cc-a355-f36961e0647c
+		summarizeBy: sum
+		sourceColumn: CLV_HISTORICAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition CUSTOMER_SUMMARY = m
+		mode: import
+		source =
+				let
+				    Source = Snowflake.Databases("VHGALJN-NEB29791.snowflakecomputing.com","OLIST_WH",[Implementation="2.0", Role="OLIST_REPORTER"]),
+				    OLIST_Database = Source{[Name="OLIST",Kind="Database"]}[Data],
+				    MARTS_Schema = OLIST_Database{[Name="MARTS",Kind="Schema"]}[Data],
+				    CUSTOMER_SUMMARY_Table = MARTS_Schema{[Name="CUSTOMER_SUMMARY",Kind="Table"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(CUSTOMER_SUMMARY_Table,{{"RFM_SEGMENT", "SEGMENT"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Exception
+

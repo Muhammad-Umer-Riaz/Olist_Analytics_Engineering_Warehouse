@@ -1,0 +1,90 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "bar_recency_seg",
+  "position": {
+    "x": 526,
+    "y": 454,
+    "z": 7,
+    "height": 242,
+    "width": 486,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "barChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CUSTOMER_SUMMARY"
+                    }
+                  },
+                  "Property": "SEGMENT"
+                }
+              },
+              "queryRef": "CUSTOMER_SUMMARY.RFM_SEGMENT",
+              "nativeQueryRef": "SEGMENT",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CUSTOMER_SUMMARY"
+                    }
+                  },
+                  "Property": "Avg Recency (Days)"
+                }
+              },
+              "queryRef": "CUSTOMER_SUMMARY.Avg Recency (Days)",
+              "nativeQueryRef": "Avg Recency (Days)"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "CUSTOMER_SUMMARY"
+                  }
+                },
+                "Property": "Avg Recency (Days)"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Avg recency by segment (days)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

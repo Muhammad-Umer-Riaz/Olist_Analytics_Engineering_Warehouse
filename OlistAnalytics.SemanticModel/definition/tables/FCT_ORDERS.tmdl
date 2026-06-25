@@ -1,0 +1,362 @@
+table FCT_ORDERS
+	lineageTag: 2209a3da-708d-4e4d-a29e-6eed9ef476ad
+
+	measure 'Total Orders' = COUNTROWS(FCT_ORDERS)
+		formatString: #,##0
+		displayFolder: Orders & Value
+		lineageTag: 8d355aac-51b2-4b31-90de-cd602afeff3a
+
+	measure 'Total Payment Value' = SUM(FCT_ORDERS[TOTAL_PAYMENT_VALUE])
+		formatString: #,##0
+		displayFolder: Orders & Value
+		lineageTag: 5c45e550-6ee5-401d-a528-f2e2e50c35c1
+
+	measure 'Avg Order Value' = DIVIDE([Total Revenue], [Total Orders])
+		formatString: """R$ ""#,##0"""
+		displayFolder: Orders & Value
+		lineageTag: 6b3cf102-0c31-4e64-978f-bf73c80fe686
+
+	measure 'Late Orders' = CALCULATE([Total Orders], FCT_ORDERS[IS_LATE] = TRUE())
+		formatString: #,##0
+		displayFolder: Delivery & Ops
+		lineageTag: 132991c7-5881-4898-92ea-77bb894d4921
+
+	measure 'On-Time Orders' = CALCULATE([Total Orders], FCT_ORDERS[IS_LATE] = FALSE())
+		formatString: #,##0
+		displayFolder: Delivery & Ops
+		lineageTag: a2a543ff-ca96-43bc-be92-c3d858ba325e
+
+	measure 'Delivered Orders' = [On-Time Orders] + [Late Orders]
+		formatString: #,##0
+		displayFolder: Delivery & Ops
+		lineageTag: ed20c28c-2c22-40bd-82b6-7d6bed4e74ce
+
+	measure 'On-Time Delivery Rate' = DIVIDE([On-Time Orders], [On-Time Orders] + [Late Orders])
+		formatString: 0.0%
+		displayFolder: Delivery & Ops
+		lineageTag: 467889e4-d075-49d5-aac2-3e48bdc5caa9
+
+	measure 'Avg Delivery Days' = AVERAGE(FCT_ORDERS[DELIVERY_DAYS])
+		formatString: 0.0
+		displayFolder: Delivery & Ops
+		lineageTag: 9a1ed231-6121-4645-9134-aa7f2f4b3f1a
+
+	measure 'Avg Delivery vs Estimate' = AVERAGE(FCT_ORDERS[DELIVERY_VS_ESTIMATE_DAYS])
+		formatString: 0.0
+		displayFolder: Delivery & Ops
+		lineageTag: 284db7d6-a451-4473-bb11-2930841809b0
+
+	measure 'Avg Review Score' = AVERAGE(FCT_ORDERS[REVIEW_SCORE])
+		formatString: 0.00
+		displayFolder: Delivery & Ops
+		lineageTag: 4457bfb1-8f99-41b0-826e-4d763af5a1b6
+
+	measure 'Orders by Delivery Date' = CALCULATE([Total Orders], USERELATIONSHIP(FCT_ORDERS[ORDER_DELIVERED_CUSTOMER_DATE_KEY], DIM_DATES[DATE_KEY]))
+		formatString: #,##0
+		displayFolder: Date Roles
+		lineageTag: a3d62d6b-7229-48c0-944b-8aa679fbdc75
+
+	measure 'Orders by Est. Delivery Date' = CALCULATE([Total Orders], USERELATIONSHIP(FCT_ORDERS[ORDER_ESTIMATED_DELIVERY_DATE_KEY], DIM_DATES[DATE_KEY]))
+		formatString: #,##0
+		displayFolder: Date Roles
+		lineageTag: a2528164-871f-4947-bdff-8f2debf6c6a1
+
+	measure 'Late Rate' = DIVIDE([Late Orders], [Delivered Orders])
+		formatString: 0.0%
+		displayFolder: Delivery & Ops
+		lineageTag: 7c1e9a02-4b3d-4f1a-9c6e-1a2b3c4d5e6f
+
+	column ORDER_ID
+		dataType: string
+		lineageTag: 800f7abc-6bf8-4410-a7c3-4b365a315cd5
+		summarizeBy: none
+		sourceColumn: ORDER_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column CUSTOMER_ID
+		dataType: string
+		lineageTag: 7a5188ef-7910-45c3-9e83-1601d92bc02b
+		summarizeBy: none
+		sourceColumn: CUSTOMER_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column ORDER_PURCHASE_DATE_KEY
+		dataType: double
+		lineageTag: 09d81624-0576-4a5f-85bf-5cb12c9eae29
+		summarizeBy: none
+		sourceColumn: ORDER_PURCHASE_DATE_KEY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ORDER_DELIVERED_CUSTOMER_DATE_KEY
+		dataType: double
+		lineageTag: 047ad108-d300-4cf0-873d-6a1f425f2cde
+		summarizeBy: sum
+		sourceColumn: ORDER_DELIVERED_CUSTOMER_DATE_KEY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ORDER_ESTIMATED_DELIVERY_DATE_KEY
+		dataType: double
+		lineageTag: 10b279b9-8066-4717-94e8-7120c725c295
+		summarizeBy: sum
+		sourceColumn: ORDER_ESTIMATED_DELIVERY_DATE_KEY
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ORDER_STATUS
+		dataType: string
+		lineageTag: 5674747e-179e-4f61-b121-12a35c9d6781
+		summarizeBy: none
+		sourceColumn: ORDER_STATUS
+
+		annotation SummarizationSetBy = Automatic
+
+	column PAYMENT_TYPE
+		dataType: string
+		lineageTag: f3c7e0ed-6e9a-49db-9b30-95779ff765ca
+		summarizeBy: none
+		sourceColumn: PAYMENT_TYPE
+
+		annotation SummarizationSetBy = Automatic
+
+	column IS_MULTI_METHOD
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a1168be5-660b-453b-8ad9-9e576b0112a2
+		summarizeBy: none
+		sourceColumn: IS_MULTI_METHOD
+
+		annotation SummarizationSetBy = Automatic
+
+	column IS_LATE
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 0441069d-eba1-4710-be8e-0141435e1111
+		summarizeBy: none
+		sourceColumn: IS_LATE
+
+		annotation SummarizationSetBy = Automatic
+
+	column REVIEW_ID
+		dataType: string
+		lineageTag: e330d527-4f5e-4068-8014-a0193d34d185
+		summarizeBy: none
+		sourceColumn: REVIEW_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column REVIEW_SCORE
+		dataType: double
+		lineageTag: aba8b519-b191-4e4b-8d60-2097091f7721
+		summarizeBy: sum
+		sourceColumn: REVIEW_SCORE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ORDER_PURCHASE_TIMESTAMP
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 18ce9842-c766-416a-a4dc-24a7aecaae82
+		summarizeBy: none
+		sourceColumn: ORDER_PURCHASE_TIMESTAMP
+
+		annotation SummarizationSetBy = Automatic
+
+	column ORDER_APPROVED_AT
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 5c2bc877-26ce-4d32-9c13-b39f6b4bb28d
+		summarizeBy: none
+		sourceColumn: ORDER_APPROVED_AT
+
+		annotation SummarizationSetBy = Automatic
+
+	column ORDER_DELIVERED_CARRIER_DATE
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 11a8665c-aae7-4e7a-bf48-af7389e59818
+		summarizeBy: none
+		sourceColumn: ORDER_DELIVERED_CARRIER_DATE
+
+		annotation SummarizationSetBy = Automatic
+
+	column ORDER_DELIVERED_CUSTOMER_DATE
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 23fb7b26-aa1b-469b-9acf-fdc559e8f972
+		summarizeBy: none
+		sourceColumn: ORDER_DELIVERED_CUSTOMER_DATE
+
+		annotation SummarizationSetBy = Automatic
+
+	column ORDER_ESTIMATED_DELIVERY_DATE
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: a89cdde0-52f5-4e15-ae70-6441c414fe45
+		summarizeBy: none
+		sourceColumn: ORDER_ESTIMATED_DELIVERY_DATE
+
+		annotation SummarizationSetBy = Automatic
+
+	column DELIVERY_DAYS
+		dataType: double
+		lineageTag: b9359a05-5897-44b1-ad8b-71ed28d4c02a
+		summarizeBy: sum
+		sourceColumn: DELIVERY_DAYS
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ESTIMATED_DELIVERY_DAYS
+		dataType: double
+		lineageTag: 61254d0d-b9e5-4287-a60d-8558d37c5d48
+		summarizeBy: sum
+		sourceColumn: ESTIMATED_DELIVERY_DAYS
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DELIVERY_VS_ESTIMATE_DAYS
+		dataType: double
+		lineageTag: 754f6e61-9cbf-4556-8f1d-c01f16b50a12
+		summarizeBy: sum
+		sourceColumn: DELIVERY_VS_ESTIMATE_DAYS
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TOTAL_PAYMENT_VALUE
+		dataType: double
+		lineageTag: fbf13d1c-93b0-41d5-b6b1-6767eab1fa8e
+		summarizeBy: sum
+		sourceColumn: TOTAL_PAYMENT_VALUE
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TOTAL_PAYMENT_VALUE_USD
+		dataType: double
+		lineageTag: f9665686-ce24-4726-bcf4-31e4ddb565b2
+		summarizeBy: sum
+		sourceColumn: TOTAL_PAYMENT_VALUE_USD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TOTAL_PAYMENT_VALUE_EUR
+		dataType: double
+		lineageTag: fbb11bc8-8645-4584-ac33-b4a99a4e2554
+		summarizeBy: sum
+		sourceColumn: TOTAL_PAYMENT_VALUE_EUR
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PAYMENT_COUNT
+		dataType: double
+		lineageTag: 221edf2d-d406-4b86-821f-c536d75bbf53
+		summarizeBy: sum
+		sourceColumn: PAYMENT_COUNT
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column MAX_INSTALLMENTS
+		dataType: double
+		lineageTag: c3d7f1e7-67d7-42e2-aa99-583a6180ff5e
+		summarizeBy: sum
+		sourceColumn: MAX_INSTALLMENTS
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column DISTINCT_PAYMENT_TYPES
+		dataType: double
+		lineageTag: 84dfdf89-2aef-4a05-8f59-bafb4c10aabd
+		summarizeBy: sum
+		sourceColumn: DISTINCT_PAYMENT_TYPES
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ORDER_ITEM_TOTAL
+		dataType: double
+		lineageTag: 6f8f602f-9774-466c-9519-27cb34478989
+		summarizeBy: sum
+		sourceColumn: ORDER_ITEM_TOTAL
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ITEM_COUNT
+		dataType: double
+		lineageTag: 208a8fc7-6858-4d1c-9892-b4336d37ddf9
+		summarizeBy: sum
+		sourceColumn: ITEM_COUNT
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PAYMENT_RECONCILIATION_DIFF
+		dataType: double
+		lineageTag: 8e50b8cf-2d65-4715-a086-dfd142244582
+		summarizeBy: sum
+		sourceColumn: PAYMENT_RECONCILIATION_DIFF
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column IS_PAYMENT_RECONCILED
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 92ec910a-43e9-44e4-9711-980a80b92318
+		summarizeBy: none
+		sourceColumn: IS_PAYMENT_RECONCILED
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Delivery Days Bucket' = SWITCH(TRUE(), ISBLANK(FCT_ORDERS[DELIVERY_DAYS]), "Not delivered", FCT_ORDERS[DELIVERY_DAYS] <= 3, "00-03 days", FCT_ORDERS[DELIVERY_DAYS] <= 7, "04-07 days", FCT_ORDERS[DELIVERY_DAYS] <= 14, "08-14 days", FCT_ORDERS[DELIVERY_DAYS] <= 30, "15-30 days", "31+ days")
+		dataType: string
+		lineageTag: 8a2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition FCT_ORDERS = m
+		mode: import
+		source =
+				let
+				    Source = Snowflake.Databases("VHGALJN-NEB29791.snowflakecomputing.com","OLIST_WH",[Implementation="2.0", Role="OLIST_REPORTER"]),
+				    OLIST_Database = Source{[Name="OLIST",Kind="Database"]}[Data],
+				    MARTS_Schema = OLIST_Database{[Name="MARTS",Kind="Schema"]}[Data],
+				    FCT_ORDERS_Table = MARTS_Schema{[Name="FCT_ORDERS",Kind="Table"]}[Data],
+				    CleanPaymentType = Table.TransformColumns(FCT_ORDERS_Table, {{"PRIMARY_PAYMENT_TYPE", each if _ = null then null else Text.Proper(Text.Replace(_, "_", " ")), type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(CleanPaymentType,{{"PRIMARY_PAYMENT_TYPE", "PAYMENT_TYPE"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
